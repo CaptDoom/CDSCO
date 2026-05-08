@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { OPEN_SOURCE_SAMPLES } from "../data/samples";
-import { classifySAE, streamClassifySAE } from "../services/geminiService";
+import { classifySAE, streamClassifySAE, calculatePriorityScore } from "../services/geminiService";
 import ReactMarkdown from "react-markdown";
 
 export default function SAEBoard() {
@@ -33,16 +33,17 @@ export default function SAEBoard() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedJustification, setStreamedJustification] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
+  const [priority, setPriority] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSamples, setShowSamples] = useState(false);
 
   const queueItems = [
-    { id: "SAE-441", hospital: "AIIMS Delhi", status: "CRITICAL", time: "2 mins ago", type: "DEATH", text: "82Y Male. History of chronic renal failure. Developed multi-organ failure after first dose of TEST-ANTI-INF. Death occurred at 04:00." },
-    { id: "SAE-442", hospital: "PGIMER", status: "ELEVATED", time: "15 mins ago", type: "HOSPITALISATION", text: "Female patient experienced acute cardiac distress following the administration of TEST-DRUG-X (Batch #442). Significant drop in BP (70/40 mmHg)." },
-    { id: "SAE-443", hospital: "CMC Vellore", status: "PENDING", time: "1 hour ago", type: "DISABILITY", text: "Subject reported persistent numbness in lower extremities 48 hours after vaccination. EMG shows signs of acute inflammatory demyelinating polyradiculoneuropathy." },
+    { id: "SAE-441", hospital: "AIIMS Delhi", status: "CRITICAL", time: "2 mins ago", type: "DEATH", text: "82Y Male. History of chronic renal failure. Developed multi-organ failure after first dose of TEST-ANTI-INF. Death occurred at 04:00.", delayDays: 2, daysToDeadline: 5 },
+    { id: "SAE-442", hospital: "PGIMER", status: "ELEVATED", time: "15 mins ago", type: "HOSPITALISATION", text: "Female patient experienced acute cardiac distress following the administration of TEST-DRUG-X (Batch #442). Significant drop in BP (70/40 mmHg).", delayDays: 5, daysToDeadline: 16 },
+    { id: "SAE-443", hospital: "CMC Vellore", status: "PENDING", time: "1 hour ago", type: "DISABILITY", text: "Subject reported persistent numbness in lower extremities 48 hours after vaccination. EMG shows signs of acute inflammatory demyelinating polyradiculoneuropathy.", delayDays: 12, daysToDeadline: 18 },
   ];
 
-  const handleClassify = async (textToUse?: string) => {
+  const handleClassify = async (textToUse?: string, metadata?: any) => {
     const text = textToUse || inputText;
     if (!text.trim()) return;
     
@@ -52,6 +53,7 @@ export default function SAEBoard() {
     setIsStreaming(true);
     setStreamedJustification("");
     setAnalysis(null);
+    setPriority(null);
     setError(null);
     setActiveView('analysis');
 
@@ -64,6 +66,16 @@ export default function SAEBoard() {
 
       const data = await classifySAE(text);
       setAnalysis(data);
+
+      // Priority Calculation (Theory Methodology)
+      const priorityData = calculatePriorityScore({
+        severity: data.severity,
+        delayDays: metadata?.delayDays || 3,
+        daysToDeadline: metadata?.daysToDeadline || 14,
+        completeness: 0.85
+      });
+      setPriority(priorityData);
+
     } catch (err) {
       console.error(err);
       setError("Failed to audit case narration. Please verify the neural node connection.");
@@ -285,21 +297,36 @@ export default function SAEBoard() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Duplicate Detection Matrix</h3>
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                           <div className="flex justify-between items-center mb-4">
-                             <div className="flex items-center gap-2">
-                               <Copy className="size-3 text-[#0F4C81]" />
-                               <span className="text-[10px] font-bold text-gray-700">Semantic Duplicates</span>
-                             </div>
-                             <span className="text-[10px] font-bold text-green-600 uppercase">Unique (0 fits)</span>
-                           </div>
-                           <div className="space-y-1">
-                             <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                               <div className="h-full bg-green-500 w-[4%]" />
-                             </div>
-                             <p className="text-[8px] text-gray-400 font-bold">Hash Conflict probability: 0.00042%</p>
-                           </div>
+                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Prioritisation Matrix (Methodology)</h3>
+                        <div className="p-5 bg-[#0F4C81] text-white rounded-xl shadow-lg shadow-blue-900/20">
+                          <div className="flex justify-between items-center mb-6">
+                            <div>
+                               <p className="text-[9px] font-bold opacity-60 uppercase">Complexity Score</p>
+                               <p className="text-3xl font-black">{priority?.score || 0}</p>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-[9px] font-bold opacity-60 uppercase">Tier Assignment</p>
+                               <p className="text-xl font-bold">{priority?.tier || "NONE"}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                             {[
+                               { label: "Severity Factor (40%)", value: 100 },
+                               { label: "Reporting Delay (25%)", value: 40 },
+                               { label: "Deadline Urgency (20%)", value: 85 }
+                             ].map((f, idx) => (
+                               <div key={idx} className="space-y-1">
+                                 <div className="flex justify-between text-[8px] font-bold uppercase opacity-80">
+                                   <span>{f.label}</span>
+                                   <span>{f.value}%</span>
+                                 </div>
+                                 <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                                   <div className="h-full bg-white" style={{ width: `${f.value}%` }} />
+                                 </div>
+                               </div>
+                             ))}
+                          </div>
                         </div>
                       </div>
 

@@ -64,13 +64,13 @@ export default function App() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-[#E2E8F0] flex flex-col shadow-sm z-30">
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-[#0F4C81] rounded-lg flex items-center justify-center shadow-lg">
-              <ShieldAlert className="text-white size-6" />
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-11 h-11 bg-gradient-to-br from-[#0F4C81] to-[#1a5f9b] rounded-xl flex items-center justify-center shadow-xl shadow-blue-900/20 ring-1 ring-white/20">
+              <ShieldAlert className="text-white size-6 drop-shadow-md" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-[#0F4C81] leading-none uppercase">RAHA</h1>
-              <p className="text-[9px] text-gray-400 font-bold tracking-widest uppercase mt-1">Regulatory Authority AI</p>
+              <h1 className="text-2xl font-black tracking-tighter text-[#0F4C81] leading-none">AURA</h1>
+              <p className="text-[8px] text-gray-400 font-bold tracking-[0.2em] uppercase mt-1.5 opacity-80">Regulatory AI Node</p>
             </div>
           </div>
 
@@ -117,11 +117,11 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative overflow-hidden bg-[#F8FAFC]">
         {/* Header */}
-        <header className="h-16 border-b border-[#E2E8F0] flex items-center justify-between px-8 bg-white z-20">
+        <header className="h-16 border-b border-gray-100 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md sticky top-0 z-20">
           <div className="flex-1 max-w-xl flex items-center gap-8">
-             <div className="flex items-center gap-2 text-gray-400 border-r border-gray-100 pr-8">
-               <Clock className="size-3.5" />
-               <span className="text-[10px] font-bold font-mono tracking-tighter">
+             <div className="flex items-center gap-2.5 text-gray-400 border-r border-gray-100 pr-8">
+               <Clock className="size-3.5 text-[#0F4C81]/40" />
+               <span className="text-[10px] font-bold font-mono tracking-tighter tabular-nums text-[#0F4C81]">
                  {currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} IST
                </span>
              </div>

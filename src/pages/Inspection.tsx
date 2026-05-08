@@ -140,42 +140,96 @@ export default function Inspection() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-8"
                 >
-                  <div className="bg-white p-12 rounded-lg shadow-xl text-black font-serif min-h-[700px] relative overflow-hidden border border-[#E2E8F0]">
-                    <div className="flex justify-between border-b-2 border-black pb-6 mb-8">
+                  <div className="bg-white p-12 rounded-lg shadow-xl text-black font-serif min-h-[800px] relative overflow-hidden border border-[#E2E8F0] space-y-10">
+                    <div className="flex justify-between border-b-2 border-black pb-6">
                       <div className="text-[10px] font-bold leading-tight uppercase tracking-tight">
                         Central Drugs Standard Control Organisation<br/>
                         Ministry of Health & Family Welfare<br/>
                         Goverment of India
                       </div>
                       <div className="text-right">
-                        <div className="text-[10px] font-bold font-mono text-[#0F4C81]">CDSCO/HACK/2026/05/06</div>
-                        <div className="text-[10px] font-bold font-mono">{new Date().toISOString().split('T')[0]}</div>
+                        <div className="text-[10px] font-bold font-mono text-[#0F4C81]">REF: {report.inspection_details?.id || "CDSCO/FIELD/2026"}</div>
+                        <div className="text-[10px] font-bold font-mono">{report.inspection_details?.date || new Date().toISOString().split('T')[0]}</div>
                       </div>
                     </div>
                     
-                    <h2 className="text-center text-lg font-bold uppercase mb-10 underline decoration-double tracking-tight">Inspection Findings Report</h2>
+                    <h2 className="text-center text-lg font-bold uppercase underline decoration-double tracking-tight">GCP Inspection Report</h2>
                     
-                    <div className="whitespace-pre-wrap text-[13px] leading-[1.8] mb-10 text-justify">
-                      {report.formal_report}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-[11px] border-b border-gray-200 pb-6">
+                       <div className="space-y-4">
+                          <h3 className="font-black uppercase border-l-4 border-[#0F4C81] pl-2">1. Inspection Details</h3>
+                          <div className="grid grid-cols-2 gap-x-2">
+                             <p className="text-gray-500 font-bold uppercase">Site Name:</p>
+                             <p>{report.inspection_details?.site}</p>
+                             <p className="text-gray-500 font-bold uppercase">Inspectors:</p>
+                             <p>{report.inspection_details?.inspectors}</p>
+                          </div>
+                       </div>
+                       <div className="space-y-4">
+                          <h3 className="font-black uppercase border-l-4 border-[#0F4C81] pl-2">2. Study Details</h3>
+                          <div className="grid grid-cols-2 gap-x-2">
+                             <p className="text-gray-500 font-bold uppercase">Protocol:</p>
+                             <p>{report.study_details?.protocol}</p>
+                             <p className="text-gray-500 font-bold uppercase">Sponsor:</p>
+                             <p>{report.study_details?.sponsor}</p>
+                          </div>
+                       </div>
                     </div>
 
-                    {report.violations?.length > 0 && (
-                      <div className="mt-10 border-t border-black pt-6">
-                        <h4 className="text-[11px] font-bold uppercase mb-4 flex items-center gap-2 text-red-600">
-                          <AlertTriangle className="size-4" /> Non-Conformance Findings
-                        </h4>
-                        <ul className="list-disc pl-5 space-y-3">
-                          {report.violations.map((v: string, i: number) => (
-                            <li key={i} className="text-[11px] font-bold italic text-gray-800 leading-relaxed">{v}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="space-y-6 text-[12px]">
+                       <h3 className="font-black uppercase border-l-4 border-amber-500 pl-2">3. Observations</h3>
+                       <div className="space-y-4">
+                          {report.observations?.critical?.length > 0 && (
+                             <div className="space-y-2">
+                                <p className="text-[10px] font-bold text-red-600 uppercase">Critical Findings</p>
+                                <ul className="list-disc pl-5 space-y-1 italic">
+                                   {report.observations.critical.map((v:any, i:any) => <li key={i}>{v}</li>)}
+                                </ul>
+                             </div>
+                          )}
+                          {report.observations?.major?.length > 0 && (
+                             <div className="space-y-2">
+                                <p className="text-[10px] font-bold text-amber-600 uppercase">Major Findings</p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                   {report.observations.major.map((v:any, i:any) => <li key={i}>{v}</li>)}
+                                </ul>
+                             </div>
+                          )}
+                          <div className="space-y-2">
+                             <p className="text-[10px] font-bold text-gray-400 uppercase">Recommendations</p>
+                             <p className="leading-relaxed text-justify">{report.observations?.recommendations?.[0] || report.formal_report_text}</p>
+                          </div>
+                       </div>
+                    </div>
 
-                    <div className="mt-16 flex justify-end">
+                    <div className="grid grid-cols-2 gap-12 pt-6 border-t border-gray-100">
+                       <div className="space-y-4">
+                          <h3 className="text-[11px] font-black uppercase">4. Classification</h3>
+                          <div className="space-y-2 text-[10px]">
+                             <div className="flex justify-between border-b pb-1">
+                                <span className="font-bold text-gray-500 uppercase">Compliance</span>
+                                <span className="font-black text-[#0F4C81]">{report.classification?.compliance}</span>
+                             </div>
+                             <div className="flex justify-between border-b pb-1">
+                                <span className="font-bold text-gray-500 uppercase">Risk Level</span>
+                                <span className="font-black text-red-600">{report.classification?.risk}</span>
+                             </div>
+                          </div>
+                       </div>
+                       <div className="space-y-4">
+                          <h3 className="text-[11px] font-black uppercase">5. Action Required</h3>
+                          <div className="p-3 bg-gray-50 rounded border border-gray-100 italic text-[10px]">
+                             <p className="font-bold text-[#0F4C81] mb-1">{report.action_required?.type || "CAPA Submission"}</p>
+                             <p>Deadline: {report.action_required?.deadline || "30 Days from issue"}</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="mt-16 pt-12 border-t flex justify-end">
                       <div className="text-center">
                         <div className="w-40 border-b-2 border-black mb-2 shadow-sm" />
-                        <div className="text-[10px] font-bold uppercase tracking-widest">Inspector Sign-off</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest opacity-60">Inspector Digital Sign-off</div>
+                        <div className="text-[8px] font-mono mt-1 text-[#0F4C81]">{btoa(report.inspection_details?.id || 'sign').substring(0,24)}</div>
                       </div>
                     </div>
                   </div>

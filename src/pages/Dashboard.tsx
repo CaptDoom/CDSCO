@@ -179,29 +179,31 @@ export default function Dashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-[#E2E8F0]">
-                  <th className="px-6 py-4">Application ID</th>
-                  <th className="px-6 py-4">Entity Name</th>
-                  <th className="px-6 py-4">Report Type</th>
-                  <th className="px-6 py-4 text-right">Severity</th>
+                <tr className="bg-gray-50/30 text-[9px] font-medium text-gray-400 uppercase tracking-widest border-b border-gray-100 italic font-serif">
+                  <th className="px-6 py-5">Application ID</th>
+                  <th className="px-6 py-5">Entity Name</th>
+                  <th className="px-6 py-5">Report Type</th>
+                  <th className="px-6 py-5 text-right">Severity</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
+              <tbody className="divide-y divide-gray-50">
                 {queue.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
+                  <tr key={item.id} className="hover:bg-blue-50/30 transition-all duration-200 group cursor-pointer">
                     <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-[#0F4C81] font-mono">{item.id}</span>
+                      <span className="text-[12px] font-mono tracking-tighter text-[#0F4C81] bg-blue-50/50 px-2 py-1 rounded border border-blue-100/50">
+                         {item.id}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-bold text-gray-700">{item.entity}</td>
-                    <td className="px-6 py-4 text-xs text-gray-500">{item.type}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-gray-700 tracking-tight">{item.entity}</td>
+                    <td className="px-6 py-4 text-xs text-gray-400 font-medium">{item.type}</td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`text-[10px] font-bold uppercase tracking-tight px-3 py-1 rounded-full border ${
-                        item.sColor === 'red' ? 'text-red-600 bg-red-50 border-red-100' :
-                        item.sColor === 'blue' ? 'text-blue-600 bg-blue-50 border-blue-100' :
-                        item.sColor === 'amber' ? 'text-amber-600 bg-amber-50 border-amber-100' :
-                        'text-gray-500 bg-gray-50 border-gray-100'
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border shadow-sm transition-transform group-hover:scale-105 inline-block ${
+                        item.sColor === 'red' ? 'text-red-600 bg-red-100/20 border-red-200' :
+                        item.sColor === 'blue' ? 'text-blue-600 bg-blue-100/20 border-blue-200' :
+                        item.sColor === 'amber' ? 'text-amber-600 bg-amber-100/20 border-amber-200' :
+                        'text-gray-400 bg-gray-100/50 border-gray-200'
                       }`}>
-                        • {item.severity}
+                        {item.severity}
                       </span>
                     </td>
                   </tr>
@@ -325,18 +327,15 @@ export default function Dashboard() {
 
          {/* Automated Compliance Scan */}
          <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">Automated Compliance Scan</h3>
-            <p className="text-xs text-gray-600 leading-relaxed mb-6">
-               AI detected 3 missing metadata tags in <span className="font-bold">#NDA-441-X001</span>. 
-            </p>
-            <button className="mt-auto px-6 py-2 border-2 border-[#0F4C81] text-[#0F4C81] rounded-lg text-xs font-bold hover:bg-[#0F4C81] hover:text-white transition-all uppercase tracking-widest">
-               Audit Integrity Scan
-            </button>
-            <div className="mt-4 flex justify-end">
-               <div className="w-16 h-16 opacity-10">
-                  <ShieldCheck className="size-full text-gray-400" />
-               </div>
+            <div className="mb-auto">
+               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-6">Automated Compliance Scan</h3>
+               <p className="text-[13px] text-gray-600 leading-relaxed mb-10 font-medium">
+                  Neural engines detected <span className="text-[#0F4C81] font-black underline decoration-[#0F4C81]/30">3 missing metadata tags</span> in verified container index <span className="font-bold text-gray-900">#NDA-441-X001</span>. 
+               </p>
             </div>
+            <button className="w-full py-4 bg-[#0F4C81] text-white rounded-xl text-[10px] font-bold hover:bg-[#1a5f9b] transition-all uppercase tracking-widest shadow-lg shadow-blue-900/20 ring-1 ring-white/10 active:scale-95">
+               Engage Policy Repair
+            </button>
          </div>
 
          {/* Infrastructure Health & Footer Status */}

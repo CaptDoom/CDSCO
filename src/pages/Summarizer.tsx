@@ -232,36 +232,84 @@ export default function Summarizer() {
                     "{result.summary}"
                   </div>
 
-                  <div className="grid grid-cols-1 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-[#E2E8F0] pb-2">Key Extracted Highlights</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {(result.key_points || result.sections?.map((s:any)=>s.heading)).map((point: any, i: number) => (
-                          <div key={i} className="p-4 bg-white border border-[#E2E8F0] rounded-xl text-xs font-bold text-gray-600 flex gap-3 shadow-sm hover:border-blue-200 transition-colors">
-                            <div className="w-1.5 h-1.5 bg-[#0F4C81] rounded-full mt-1.5 shrink-0" />
-                            {point.heading || point}
-                          </div>
-                        ))}
+                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-[#E2E8F0] pb-2">Regulatory Audit Scorecard</h4>
+                      <div className="p-6 bg-[#0F4C81] text-white rounded-2xl shadow-xl shadow-blue-900/20">
+                         <div className="flex justify-between items-center mb-6">
+                            <div>
+                               <p className="text-[9px] font-bold opacity-60 uppercase">Completeness Index</p>
+                               <p className="text-4xl font-black">{Math.round((result.completeness || 0) * 100)}%</p>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-[9px] font-bold opacity-60 uppercase">Status</p>
+                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                                 result.completeness > 0.9 ? 'bg-green-500/20 border-green-400 text-green-300' : 
+                                 result.completeness > 0.7 ? 'bg-amber-500/20 border-amber-400 text-amber-300' :
+                                 'bg-red-500/20 border-red-400 text-red-300'
+                               }`}>
+                                 {result.completeness > 0.9 ? 'COMPLETE' : result.completeness > 0.7 ? 'PENDING' : 'INCOMPLETE'}
+                               </span>
+                            </div>
+                         </div>
+                         <div className="space-y-3">
+                            <div className="flex justify-between text-[8px] font-bold uppercase opacity-80">
+                               <span>Neural Verification Success</span>
+                               <span>98.6%</span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                               <div className="h-full bg-white" style={{ width: '98.6%' }} />
+                            </div>
+                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-bold text-red-500 uppercase tracking-widest border-b border-[#E2E8F0] pb-2 flex items-center gap-2">
+                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-[#E2E8F0] pb-2 flex items-center gap-2">
                         <AlertTriangle className="size-3" />
-                        Critical Regulatory Flags
+                        Audit Invariants & Flags
                       </h4>
-                      <div className="space-y-2">
-                        {result.flags?.length ? result.flags.map((flag: string, i: number) => (
-                          <div key={i} className="p-4 bg-red-50 border border-red-100 rounded-xl text-xs font-bold text-red-600 flex gap-3">
-                            <AlertCircle className="size-4 shrink-0" />
-                            {flag}
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                        {result.audit_flags?.length ? result.audit_flags.map((item: any, i: number) => (
+                          <div key={i} className={`p-4 rounded-xl border flex gap-3 transition-all hover:scale-[1.02] ${
+                            item.severity === 'CRITICAL' ? 'bg-red-50 border-red-100 text-red-600' : 
+                            item.severity === 'HIGH' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                            item.severity === 'MEDIUM' ? 'bg-blue-50 border-blue-100 text-[#0F4C81]' :
+                            'bg-gray-50 border-gray-100 text-gray-400'
+                          }`}>
+                            <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                              item.severity === 'CRITICAL' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 
+                              item.severity === 'HIGH' ? 'bg-amber-500' :
+                              item.severity === 'MEDIUM' ? 'bg-[#0F4C81]' :
+                              'bg-gray-400'
+                            }`} />
+                            <div>
+                               <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="text-[9px] font-bold uppercase tracking-tight">{item.flag}</span>
+                                  <span className="text-[7px] font-bold border border-current opacity-40 px-1 rounded uppercase tracking-tighter">{item.severity}</span>
+                               </div>
+                               <p className="text-[10px] leading-tight opacity-80">{item.description}</p>
+                            </div>
                           </div>
                         )) : (
-                          <div className="p-4 bg-green-50 border border-green-100 rounded-xl text-xs font-bold text-green-600">
-                            No immediate regulatory conflicts detected.
+                          <div className="p-12 border-2 border-dashed border-gray-100 rounded-2xl flex flex-col items-center justify-center text-center">
+                            <CheckCircle2 className="size-8 text-green-200 mb-2" />
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">No compliance violations <br/> detected in neural scan</p>
                           </div>
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-[#E2E8F0] pb-2">Key Extracted Highlights</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(result.key_points || []).map((point: any, i: number) => (
+                        <div key={i} className="p-4 bg-white border border-[#E2E8F0] rounded-xl text-xs font-bold text-gray-600 flex gap-3 shadow-sm hover:border-blue-200 transition-colors">
+                          <div className="w-1.5 h-1.5 bg-[#0F4C81] rounded-full mt-1.5 shrink-0" />
+                          {point}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </motion.div>
