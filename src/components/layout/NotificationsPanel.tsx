@@ -1,3 +1,4 @@
+import React from "react";
 import { Bell, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   Popover,

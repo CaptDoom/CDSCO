@@ -24,13 +24,130 @@ import { generateInspectionReport } from "../services/geminiService";
 import { motion, AnimatePresence } from "motion/react";
 import { OPEN_SOURCE_SAMPLES } from "../data/samples";
 
+const FormalReport = React.memo(({ report }: { report: any }) => {
+  if (!report) return null;
+  return (
+    <motion.div
+      key="report"
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="space-y-12"
+    >
+      <div className="p-12 rounded-xl bg-white border border-slate-200 shadow-xl relative overflow-hidden group/doc">
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-primary" />
+        
+        <div className="flex justify-between items-start border-b border-slate-100 pb-8 mb-10">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-tighter text-slate-900">Central Drugs Standard Control Organisation</p>
+            <p className="text-[9px] font-bold uppercase tracking-tighter text-slate-600">Ministry of Health & Family Welfare</p>
+            <p className="text-[9px] font-bold uppercase tracking-tighter text-slate-600">Government of India</p>
+          </div>
+          <div className="text-right flex flex-col items-end gap-1">
+            <div className="text-[9px] font-black font-mono text-secondary decoration-primary decoration-2 underline-offset-4 tracking-tighter">REF: {report.inspection_details?.id || "CDSCO/FIELD/2026"}</div>
+            <div className="text-[9px] font-black font-mono text-slate-400">{report.inspection_details?.date || new Date().toISOString().split('T')[0]}</div>
+          </div>
+        </div>
+        
+        <h2 className="text-center font-display text-2xl font-black uppercase tracking-tight text-slate-900 mb-12">
+          Formal GCP Inspection Document
+        </h2>
+        
+        <div className="grid grid-cols-2 gap-10 border-b border-slate-100 pb-10 mb-10">
+           <div className="space-y-6">
+              <h3 className="text-[10px] font-black uppercase text-secondary flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
+                Section I: Invariants
+              </h3>
+              <div className="space-y-3">
+                 <div className="flex justify-between group/cell">
+                    <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Site Anchor:</span>
+                    <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.inspection_details?.site}</span>
+                 </div>
+                 <div className="flex justify-between group/cell">
+                    <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Authorized Inspector:</span>
+                    <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.inspection_details?.inspectors}</span>
+                 </div>
+              </div>
+           </div>
+           <div className="space-y-6">
+              <h3 className="text-[10px] font-black uppercase text-secondary flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
+                 Section II: Protocol
+              </h3>
+              <div className="space-y-3">
+                 <div className="flex justify-between group/cell">
+                    <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Subject ID:</span>
+                    <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.study_details?.protocol}</span>
+                 </div>
+                 <div className="flex justify-between group/cell">
+                    <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Sponsor Hub:</span>
+                    <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.study_details?.sponsor}</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <div className="space-y-8">
+           <h3 className="text-[10px] font-black uppercase text-primary flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+              Section III: Observation Analysis & Synthesis
+           </h3>
+           <div className="space-y-6">
+              {report.observations?.critical?.length > 0 && (
+                 <div className="p-6 rounded-xl bg-red-50 border border-red-100 flex gap-4 shadow-sm">
+                    <AlertTriangle className="size-4 text-red-500 shrink-0 mt-1" />
+                    <div className="space-y-2 flex-1">
+                       <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">Critical Anomalies Detected</p>
+                       <ul className="space-y-2">
+                          {report.observations.critical.map((v:any, i:any) => (
+                            <li key={i} className="text-[11px] font-bold text-red-800 list-disc ml-4 font-mono leading-relaxed">{v}</li>
+                          ))}
+                       </ul>
+                    </div>
+                 </div>
+              )}
+              {report.observations?.major?.length > 0 && (
+                 <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 flex gap-4 shadow-sm">
+                    <Eye className="size-4 text-secondary shrink-0 mt-1" />
+                    <div className="space-y-2 flex-1">
+                       <p className="text-[9px] font-black text-secondary uppercase tracking-widest">Major Logic Deviations</p>
+                       <ul className="space-y-2">
+                          {report.observations.major.map((v:any, i:any) => (
+                            <li key={i} className="text-[11px] font-bold text-slate-600 list-disc ml-4 leading-relaxed">{v}</li>
+                          ))}
+                       </ul>
+                    </div>
+                 </div>
+              )}
+              <div className="p-6 rounded-xl bg-slate-50 border border-slate-100 italic text-[11px] font-medium leading-relaxed text-slate-700 transition-colors shadow-sm">
+                 "{report.observations?.recommendations?.[0] || report.formal_report_text}"
+              </div>
+           </div>
+        </div>
+
+        <div className="mt-20 pt-12 border-t border-slate-100 flex justify-end">
+          <div className="text-center group/sign">
+            <div className="w-48 h-px bg-slate-300 scale-x-0 group-hover/sign:scale-x-100 transition-transform origin-right duration-700 mb-2" />
+            <p className="text-[9px] font-black uppercase text-slate-900 tracking-widest">Inspector Signature Token</p>
+            <div className="text-[8px] font-mono mt-1 text-primary opacity-40 group-hover:opacity-100 transition-opacity">
+              {btoa(report.inspection_details?.id || 'sign').substring(0,32)}-VERIFIED
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+FormalReport.displayName = "FormalReport";
+
 export default function Inspection() {
   const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [showSamples, setShowSamples] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = React.useCallback(async () => {
     if (!notes.trim()) return;
     setIsProcessing(true);
     try {
@@ -41,7 +158,7 @@ export default function Inspection() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [notes]);
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700 min-h-full flex flex-col pb-12">
@@ -183,117 +300,7 @@ export default function Inspection() {
                   </motion.div>
                 )}
 
-                {report && (
-                  <motion.div
-                    key="report"
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="space-y-12"
-                  >
-                    <div className="p-12 rounded-xl bg-white border border-slate-200 shadow-xl relative overflow-hidden group/doc">
-                      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-primary" />
-                      
-                      <div className="flex justify-between items-start border-b border-slate-100 pb-8 mb-10">
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black uppercase tracking-tighter text-slate-900">Central Drugs Standard Control Organisation</p>
-                          <p className="text-[9px] font-bold uppercase tracking-tighter text-slate-600">Ministry of Health & Family Welfare</p>
-                          <p className="text-[9px] font-bold uppercase tracking-tighter text-slate-600">Government of India</p>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-1">
-                          <div className="text-[9px] font-black font-mono text-secondary decoration-primary decoration-2 underline-offset-4 tracking-tighter">REF: {report.inspection_details?.id || "CDSCO/FIELD/2026"}</div>
-                          <div className="text-[9px] font-black font-mono text-slate-400">{report.inspection_details?.date || new Date().toISOString().split('T')[0]}</div>
-                        </div>
-                      </div>
-                      
-                      <h2 className="text-center font-display text-2xl font-black uppercase tracking-tight text-slate-900 mb-12">
-                        Formal GCP Inspection Document
-                      </h2>
-                      
-                      <div className="grid grid-cols-2 gap-10 border-b border-slate-100 pb-10 mb-10">
-                         <div className="space-y-6">
-                            <h3 className="text-[10px] font-black uppercase text-secondary flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
-                              Section I: Invariants
-                            </h3>
-                            <div className="space-y-3">
-                               <div className="flex justify-between group/cell">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Site Anchor:</span>
-                                  <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.inspection_details?.site}</span>
-                               </div>
-                               <div className="flex justify-between group/cell">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Authorized Inspector:</span>
-                                  <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.inspection_details?.inspectors}</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="space-y-6">
-                            <h3 className="text-[10px] font-black uppercase text-secondary flex items-center gap-2">
-                               <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
-                               Section II: Protocol
-                            </h3>
-                            <div className="space-y-3">
-                               <div className="flex justify-between group/cell">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Subject ID:</span>
-                                  <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.study_details?.protocol}</span>
-                               </div>
-                               <div className="flex justify-between group/cell">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase opacity-40">Sponsor Hub:</span>
-                                  <span className="text-[10px] font-bold text-slate-900 group-hover:text-primary transition-colors">{report.study_details?.sponsor}</span>
-                               </div>
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="space-y-8">
-                         <h3 className="text-[10px] font-black uppercase text-primary flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                            Section III: Observation Analysis & Synthesis
-                         </h3>
-                         <div className="space-y-6">
-                            {report.observations?.critical?.length > 0 && (
-                               <div className="p-6 rounded-xl bg-red-50 border border-red-100 flex gap-4 shadow-sm">
-                                  <AlertTriangle className="size-4 text-red-500 shrink-0 mt-1" />
-                                  <div className="space-y-2 flex-1">
-                                     <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">Critical Anomalies Detected</p>
-                                     <ul className="space-y-2">
-                                        {report.observations.critical.map((v:any, i:any) => (
-                                          <li key={i} className="text-[11px] font-bold text-red-800 list-disc ml-4 font-mono leading-relaxed">{v}</li>
-                                        ))}
-                                     </ul>
-                                  </div>
-                               </div>
-                            )}
-                            {report.observations?.major?.length > 0 && (
-                               <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 flex gap-4 shadow-sm">
-                                  <Eye className="size-4 text-secondary shrink-0 mt-1" />
-                                  <div className="space-y-2 flex-1">
-                                     <p className="text-[9px] font-black text-secondary uppercase tracking-widest">Major Logic Deviations</p>
-                                     <ul className="space-y-2">
-                                        {report.observations.major.map((v:any, i:any) => (
-                                          <li key={i} className="text-[11px] font-bold text-slate-600 list-disc ml-4 leading-relaxed">{v}</li>
-                                        ))}
-                                     </ul>
-                                  </div>
-                               </div>
-                            )}
-                            <div className="p-6 rounded-xl bg-slate-50 border border-slate-100 italic text-[11px] font-medium leading-relaxed text-slate-700 transition-colors shadow-sm">
-                               "{report.observations?.recommendations?.[0] || report.formal_report_text}"
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="mt-20 pt-12 border-t border-slate-100 flex justify-end">
-                        <div className="text-center group/sign">
-                          <div className="w-48 h-px bg-slate-300 scale-x-0 group-hover/sign:scale-x-100 transition-transform origin-right duration-700 mb-2" />
-                          <p className="text-[9px] font-black uppercase text-slate-900 tracking-widest">Inspector Signature Token</p>
-                          <div className="text-[8px] font-mono mt-1 text-primary opacity-40 group-hover:opacity-100 transition-opacity">
-                            {btoa(report.inspection_details?.id || 'sign').substring(0,32)}-VERIFIED
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                <FormalReport report={report} />
               </AnimatePresence>
             </div>
           </div>

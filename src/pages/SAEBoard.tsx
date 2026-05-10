@@ -41,6 +41,228 @@ import {
 } from "../services/geminiService";
 import ReactMarkdown from "react-markdown";
 
+const QueueItem = React.memo(({ item, onClick }: { item: any, onClick: (text: string, meta: any) => void }) => {
+  return (
+    <motion.div 
+      whileHover={{ x: 4 }}
+      onClick={() => onClick(item.text, item)}
+      className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:border-primary/30 transition-all shadow-sm"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`size-10 rounded-lg flex items-center justify-center font-black text-xs ${
+          item.status === 'CRITICAL' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-secondary/10 text-secondary border border-secondary/20'
+        }`}>
+          {item.type[0]}
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{item.id}</p>
+          <p className="text-[8px] text-slate-600 font-black uppercase tracking-tight">{item.hospital} • {item.time}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className={`text-[8px] font-black px-2 py-0.5 rounded border ${
+          item.status === 'CRITICAL' ? 'text-red-600 bg-red-50 border-red-100' : 'text-secondary bg-secondary/5 border-secondary/10'
+        }`}>
+          {item.status}
+        </span>
+        <ArrowRight className="size-4 text-slate-400 group-hover:text-primary transition-all" />
+      </div>
+    </motion.div>
+  );
+});
+
+QueueItem.displayName = "QueueItem";
+
+const AnalysisView = React.memo(({ analysis, streamedJustification, isStreaming, priority }: { analysis: any, streamedJustification: string, isStreaming: boolean, priority: any }) => {
+  if (!analysis && !streamedJustification) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-20 opacity-30">
+        <BrainCircuit className="size-20 text-primary mb-6" />
+        <h3 className="font-display text-xl font-bold text-slate-900 tracking-widest uppercase">Audit System Primed</h3>
+        <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] mt-4">Ingest case data for automated regulatory analysis</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-10">
+      <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-12 md:col-span-8 space-y-8">
+          <div className="bg-slate-50/70 p-8 rounded-2xl border border-slate-200 relative overflow-hidden shadow-sm">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <ShieldAlert className="size-20" />
+            </div>
+            <p className="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-4">Neural Severity Classification</p>
+            <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+              {analysis?.severity || "Classifying..."}
+            </h2>
+            {analysis?.confidence && (
+              <div className="mt-8 flex items-center gap-6">
+                <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${analysis.confidence * 100}%` }}
+                    className="h-full bg-primary"
+                  />
+                </div>
+                <span className="font-mono text-xs font-black text-primary">{(analysis.confidence * 100).toFixed(1)}% CONF</span>
+              </div>
+            )}
+          </div>
+
+          <div className="glass-card bg-slate-50/40 p-8 rounded-2xl border-slate-200 shadow-sm">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+              <Workflow className="size-4 text-secondary" />
+              Justification Logic Stream
+            </h4>
+            <div className="prose prose-slate prose-sm max-w-none text-slate-900 font-mono text-xs leading-relaxed opacity-80">
+              <ReactMarkdown>{streamedJustification || analysis?.justification}</ReactMarkdown>
+              {isStreaming && (
+                <div className="flex gap-1 py-4">
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-12 md:col-span-4 space-y-8">
+          <div className="bg-primary text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
+            <div className="absolute -bottom-4 -right-4 opacity-10">
+              <CloudLightning className="size-24" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-100">Complexity Tier</p>
+            <div className="text-5xl font-black">{priority?.tier || "T1"}</div>
+            <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-end">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Priority Score</div>
+                <div className="text-2xl font-black">{priority?.score || 0}</div>
+              </div>
+              <Activity className="size-6 opacity-40 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl border-slate-200 bg-white shadow-sm space-y-6">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+              <Fingerprint className="size-4 text-secondary" />
+              Attribution Matrix
+            </h4>
+            <div className="space-y-4">
+              {[
+                { label: "Clinical Weight", val: 88, color: "bg-primary" },
+                { label: "Temporal Lock", val: 94, color: "bg-primary" },
+                { label: "Semantic Delta", val: 42, color: "bg-secondary" },
+              ].map((f, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <span>{f.label}</span>
+                    <span>{f.val}%</span>
+                  </div>
+                  <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${f.val}%` }}
+                      className={`h-full ${f.color}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-4 pt-4 border-t border-slate-100">
+        <button className="flex-1 py-4 bg-slate-50 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-3 shadow-sm">
+          <ArrowLeftRight className="size-3.5 text-secondary" />
+          Recalibrate Analysis Engine
+        </button>
+        <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-3">
+          <CheckCircle2 className="size-3.5 fill-current/20" />
+          Commit to Blockchain
+        </button>
+      </div>
+    </div>
+  );
+});
+
+AnalysisView.displayName = "AnalysisView";
+
+const SemanticView = React.memo(({ isSearching, similarCases }: { isSearching: boolean, similarCases: any[] }) => {
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+         <div>
+           <h3 className="font-display text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+             <Target className="text-primary size-6" />
+             Vector Precedent Matching
+           </h3>
+           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Cross-referencing historical regulatory decisions</p>
+         </div>
+         <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+           <span className="font-mono text-[10px] font-black text-primary">Distance: Cosine</span>
+           <div className="w-px h-4 bg-slate-200" />
+           <span className="font-mono text-[10px] font-black text-secondary">Model: GEMINI-PRO-E</span>
+         </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-6 bg-white/30">
+        {isSearching ? (
+          <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+             <div className="relative">
+               <Database className="size-16 text-primary/20 animate-pulse" />
+               <motion.div 
+                 animate={{ rotate: 360 }}
+                 transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                 className="absolute inset-0 border-4 border-t-primary border-transparent rounded-full"
+               />
+             </div>
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] animate-pulse">Traversing Vector Manifold...</p>
+          </div>
+        ) : similarCases.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-20 opacity-20">
+             <FileSearch className="size-20 mb-6" />
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">No semantic precedents detected for current ingest</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+             {similarCases.map((match, i) => (
+               <motion.div 
+                 key={match.id}
+                 initial={{ opacity: 0, scale: 0.95 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 transition={{ delay: i * 0.1 }}
+                 className="glass-card bg-slate-50/50 p-6 rounded-2xl border-slate-100 hover:border-primary/40 transition-all group shadow-sm hover:shadow-md"
+               >
+                  <div className="flex justify-between items-start mb-4">
+                     <div className="flex items-center gap-3">
+                       <div className="px-3 py-1 bg-white border border-slate-100 rounded text-[10px] font-black text-primary tracking-widest uppercase shadow-sm">{match.id}</div>
+                       <span className="text-[8px] font-mono text-slate-400 uppercase">{match.date}</span>
+                     </div>
+                     <div className="text-xl font-black text-secondary tracking-tighter">{(match.similarity * 100).toFixed(1)}%</div>
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-700 opacity-80 leading-relaxed mb-6 italic">
+                    "{match.summary}"
+                  </p>
+                  <div className="pt-6 border-t border-slate-100 flex justify-between items-center">
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{match.severity}</span>
+                     <button className="px-4 py-2 bg-slate-100 text-[9px] font-black text-slate-700 uppercase tracking-widest rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2 shadow-sm border border-slate-200">
+                       Dossier <ChevronRight className="size-3" />
+                     </button>
+                  </div>
+               </motion.div>
+             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+SemanticView.displayName = "SemanticView";
+
 export default function SAEBoard() {
   const [activeView, setActiveView] = useState<'board' | 'analysis' | 'semantic'>('board');
   const [inputText, setInputText] = useState("");
@@ -61,7 +283,7 @@ const queueItems = [
     { id: "SAE-444", hospital: "Apollo Hyd", status: "STABLE", time: "3 hours ago", type: "OTHERS", text: "Patient reported mild rash and nausea 24 hours after administration of Batch Z-19. Symptoms resolved with antihistamines.", delayDays: 1, daysToDeadline: 25 },
   ];
 
-  const handleSemanticSearch = async (textToUse?: string) => {
+  const handleSemanticSearch = React.useCallback(async (textToUse?: string) => {
     const text = textToUse || inputText;
     if (!text.trim()) return;
 
@@ -90,9 +312,9 @@ const queueItems = [
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [inputText]);
 
-  const handleClassify = async (textToUse?: string, metadata?: any) => {
+  const handleClassify = React.useCallback(async (textToUse?: string, metadata?: any) => {
     const text = textToUse || inputText;
     if (!text.trim()) return;
     
@@ -131,7 +353,7 @@ const queueItems = [
       setIsProcessing(false);
       setIsStreaming(false);
     }
-  };
+  }, [inputText]);
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700 min-h-full flex flex-col pb-12">
@@ -252,32 +474,11 @@ const queueItems = [
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               {queueItems.map((item, i) => (
-                <motion.div 
+                <QueueItem 
                   key={i} 
-                  whileHover={{ x: 4 }}
-                  onClick={() => handleClassify(item.text, item)}
-                  className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:border-primary/30 transition-all shadow-sm"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`size-10 rounded-lg flex items-center justify-center font-black text-xs ${
-                      item.status === 'CRITICAL' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-secondary/10 text-secondary border border-secondary/20'
-                    }`}>
-                      {item.type[0]}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{item.id}</p>
-                      <p className="text-[8px] text-slate-600 font-black uppercase tracking-tight">{item.hospital} • {item.time}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[8px] font-black px-2 py-0.5 rounded border ${
-                      item.status === 'CRITICAL' ? 'text-red-600 bg-red-50 border-red-100' : 'text-secondary bg-secondary/5 border-secondary/10'
-                    }`}>
-                      {item.status}
-                    </span>
-                    <ArrowRight className="size-4 text-slate-400 group-hover:text-primary transition-all" />
-                  </div>
-                </motion.div>
+                  item={item} 
+                  onClick={handleClassify} 
+                />
               ))}
             </div>
           </div>
@@ -294,115 +495,12 @@ const queueItems = [
                 exit={{ opacity: 0, y: -20 }}
                 className="flex-1 glass-card rounded-2xl border-slate-200 flex flex-col overflow-hidden bg-white shadow-sm"
               >
-                {!analysis && !streamedJustification ? (
-                   <div className="flex-1 flex flex-col items-center justify-center text-center p-20 opacity-30">
-                     <BrainCircuit className="size-20 text-primary mb-6" />
-                     <h3 className="font-display text-xl font-bold text-slate-900 tracking-widest uppercase">Audit System Primed</h3>
-                     <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] mt-4">Ingest case data for automated regulatory analysis</p>
-                   </div>
-                ) : (
-                  <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-10">
-                    {/* Top Analysis Grid */}
-                    <div className="grid grid-cols-12 gap-8">
-                       <div className="col-span-12 md:col-span-8 space-y-8">
-                          <div className="bg-slate-50/70 p-8 rounded-2xl border border-slate-200 relative overflow-hidden shadow-sm">
-                             <div className="absolute top-0 right-0 p-4 opacity-5">
-                               <ShieldAlert className="size-20" />
-                             </div>
-                             <p className="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-4">Neural Severity Classification</p>
-                             <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-none">
-                               {analysis?.severity || "Classifying..."}
-                             </h2>
-                             {analysis?.confidence && (
-                               <div className="mt-8 flex items-center gap-6">
-                                 <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                                   <motion.div 
-                                     initial={{ width: 0 }}
-                                     animate={{ width: `${analysis.confidence * 100}%` }}
-                                     className="h-full bg-primary"
-                                   />
-                                 </div>
-                                 <span className="font-mono text-xs font-black text-primary">{(analysis.confidence * 100).toFixed(1)}% CONF</span>
-                               </div>
-                             )}
-                          </div>
-
-                          <div className="glass-card bg-slate-50/40 p-8 rounded-2xl border-slate-200 shadow-sm">
-                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
-                               <Workflow className="size-4 text-secondary" />
-                               Justification Logic Stream
-                             </h4>
-                             <div className="prose prose-slate prose-sm max-w-none text-slate-900 font-mono text-xs leading-relaxed opacity-80">
-                                <ReactMarkdown>{streamedJustification || analysis?.justification}</ReactMarkdown>
-                                {isStreaming && (
-                                  <div className="flex gap-1 py-4">
-                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
-                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                  </div>
-                                )}
-                             </div>
-                          </div>
-                       </div>
-
-                       <div className="col-span-12 md:col-span-4 space-y-8">
-                          <div className="bg-primary text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
-                             <div className="absolute -bottom-4 -right-4 opacity-10">
-                               <CloudLightning className="size-24" />
-                             </div>
-                             <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-100">Complexity Tier</p>
-                             <div className="text-5xl font-black">{priority?.tier || "T1"}</div>
-                             <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-end">
-                                <div>
-                                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Priority Score</div>
-                                  <div className="text-2xl font-black">{priority?.score || 0}</div>
-                                </div>
-                                <Activity className="size-6 opacity-40 animate-pulse" />
-                             </div>
-                          </div>
-
-                          <div className="glass-card p-6 rounded-2xl border-slate-200 bg-white shadow-sm space-y-6">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                               <Fingerprint className="size-4 text-secondary" />
-                               Attribution Matrix
-                            </h4>
-                            <div className="space-y-4">
-                               {[
-                                 { label: "Clinical Weight", val: 88, color: "bg-primary" },
-                                 { label: "Temporal Lock", val: 94, color: "bg-primary" },
-                                 { label: "Semantic Delta", val: 42, color: "bg-secondary" },
-                               ].map((f, i) => (
-                                 <div key={i} className="space-y-1.5">
-                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                      <span>{f.label}</span>
-                                      <span>{f.val}%</span>
-                                    </div>
-                                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                                      <motion.div 
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${f.val}%` }}
-                                        className={`h-full ${f.color}`}
-                                      />
-                                    </div>
-                                 </div>
-                               ))}
-                            </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="flex gap-4 pt-4 border-t border-slate-100">
-                      <button className="flex-1 py-4 bg-slate-50 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-3 shadow-sm">
-                        <ArrowLeftRight className="size-3.5 text-secondary" />
-                        Recalibrate Analysis Engine
-                      </button>
-                      <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-3">
-                        <CheckCircle2 className="size-3.5 fill-current/20" />
-                        Commit to Blockchain
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <AnalysisView 
+                  analysis={analysis} 
+                  streamedJustification={streamedJustification} 
+                  isStreaming={isStreaming} 
+                  priority={priority} 
+                />
               </motion.div>
             ) : activeView === 'semantic' ? (
               <motion.div 
@@ -412,70 +510,10 @@ const queueItems = [
                 exit={{ opacity: 0, y: -20 }}
                 className="flex-1 glass-card rounded-2xl border-slate-200 flex flex-col overflow-hidden bg-white shadow-sm"
               >
-                <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                   <div>
-                     <h3 className="font-display text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-                       <Target className="text-primary size-6" />
-                       Vector Precedent Matching
-                     </h3>
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Cross-referencing historical regulatory decisions</p>
-                   </div>
-                   <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
-                     <span className="font-mono text-[10px] font-black text-primary">Distance: Cosine</span>
-                     <div className="w-px h-4 bg-slate-200" />
-                     <span className="font-mono text-[10px] font-black text-secondary">Model: GEMINI-PRO-E</span>
-                   </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-6 bg-white/30">
-                  {isSearching ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-                       <div className="relative">
-                         <Database className="size-16 text-primary/20 animate-pulse" />
-                         <motion.div 
-                           animate={{ rotate: 360 }}
-                           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                           className="absolute inset-0 border-4 border-t-primary border-transparent rounded-full"
-                         />
-                       </div>
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] animate-pulse">Traversing Vector Manifold...</p>
-                    </div>
-                  ) : similarCases.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-20 opacity-20">
-                       <FileSearch className="size-20 mb-6" />
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">No semantic precedents detected for current ingest</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
-                       {similarCases.map((match, i) => (
-                         <motion.div 
-                           key={match.id}
-                           initial={{ opacity: 0, scale: 0.95 }}
-                           animate={{ opacity: 1, scale: 1 }}
-                           transition={{ delay: i * 0.1 }}
-                           className="glass-card bg-slate-50/50 p-6 rounded-2xl border-slate-100 hover:border-primary/40 transition-all group shadow-sm hover:shadow-md"
-                         >
-                            <div className="flex justify-between items-start mb-4">
-                               <div className="flex items-center gap-3">
-                                 <div className="px-3 py-1 bg-white border border-slate-100 rounded text-[10px] font-black text-primary tracking-widest uppercase shadow-sm">{match.id}</div>
-                                 <span className="text-[8px] font-mono text-slate-400 uppercase">{match.date}</span>
-                               </div>
-                               <div className="text-xl font-black text-secondary tracking-tighter">{(match.similarity * 100).toFixed(1)}%</div>
-                            </div>
-                            <p className="text-[11px] font-bold text-slate-700 opacity-80 leading-relaxed mb-6 italic">
-                               "{match.summary}"
-                            </p>
-                            <div className="pt-6 border-t border-slate-100 flex justify-between items-center">
-                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{match.severity}</span>
-                               <button className="px-4 py-2 bg-slate-100 text-[9px] font-black text-slate-700 uppercase tracking-widest rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2 shadow-sm border border-slate-200">
-                                 Dossier <ChevronRight className="size-3" />
-                               </button>
-                            </div>
-                         </motion.div>
-                       ))}
-                    </div>
-                  )}
-                </div>
+                <SemanticView 
+                  isSearching={isSearching} 
+                  similarCases={similarCases} 
+                />
               </motion.div>
             ) : (
               <motion.div 

@@ -33,6 +33,105 @@ import { motion, AnimatePresence } from "motion/react";
 import { OPEN_SOURCE_SAMPLES } from "../data/samples";
 import ReactMarkdown from "react-markdown";
 
+const ExtractionView = React.memo(({ result, isStreaming, streamedContent, docType }: { result: any, isStreaming: boolean, streamedContent: string, docType: string }) => {
+  if (!result && !streamedContent) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center space-y-8">
+        <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-primary/40 relative">
+          <FileSearch className="size-10" />
+          <div className="absolute inset-0 bg-primary/5 rounded-3xl animate-pulse" />
+        </div>
+        <div>
+          <p className="text-sm font-black text-slate-600 uppercase tracking-[0.3em]">Neural Extraction Pending</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Select source stream to initiate logic compression</p>
+        </div>
+      </div>
+    );
+  }
+
+  if ((isStreaming || streamedContent) && !result) {
+    return (
+      <div className="space-y-10">
+        <div className="flex items-center gap-3 text-primary text-[10px] font-black uppercase tracking-widest animate-pulse border-b border-slate-100 pb-4">
+          <Cpu className="size-4" />
+          Analyzing biological and regulatory patterns...
+        </div>
+        <div className="prose prose-sm max-w-none text-slate-900 font-mono text-xs leading-loose opacity-80 prose-headings:text-primary prose-headings:uppercase prose-headings:text-[10px] prose-headings:font-black prose-headings:tracking-[0.2em] prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2">
+          <ReactMarkdown>{streamedContent}</ReactMarkdown>
+        </div>
+        {isStreaming && (
+          <div className="flex gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12">
+      <div className="space-y-4">
+        <h3 className="font-display text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+          {result.title || "Logic Extraction Brief"}
+        </h3>
+        <div className="flex gap-6 pb-6 border-b border-slate-100">
+           <div className="flex items-center gap-2">
+             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Classification:</span>
+             <span className="text-[9px] font-black text-secondary uppercase tracking-widest">{result.type || docType}</span>
+           </div>
+           <div className="flex items-center gap-2">
+             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Confidence:</span>
+             <span className="text-[9px] font-black text-primary uppercase tracking-widest">{Math.round((result.completeness || 0.95) * 100)}%</span>
+           </div>
+        </div>
+      </div>
+
+      {result.metrics && (
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { label: "ROUGE-L", val: result.metrics.rougeL?.toFixed(3), color: "text-primary" },
+            { label: "BERT-S", val: result.metrics.bertScore?.toFixed(3), color: "text-primary" },
+            { label: "FIDELITY", val: "99.8%", color: "text-secondary" },
+            { label: "LATENCY", val: `${result.metrics.latencyMs?.toFixed(0)}MS`, color: "text-slate-500" }
+          ].map((m, i) => (
+            <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+              <div className="text-[8px] font-black text-slate-600 uppercase tracking-tighter mb-1">{m.label}</div>
+              <div className={`text-sm font-black tracking-tighter ${m.color}`}>{m.val}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="relative group/text">
+        <div className="absolute -left-6 top-0 bottom-0 w-1 bg-slate-100 group-hover/text:bg-primary/30 transition-colors" />
+        <div className="p-8 rounded-2xl bg-slate-50/70 border border-slate-200 italic font-medium leading-relaxed text-sm text-slate-900 shadow-inner">
+          "{result.summary}"
+        </div>
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button className="p-2 bg-white/80 text-slate-500 hover:text-primary rounded-lg border border-slate-200 transition-all shadow-sm">
+            <Copy className="size-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <button className="flex-1 py-4 bg-slate-100 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-200 transition-all flex items-center justify-center gap-3">
+          <Download className="size-3.5 text-secondary" />
+          Export Raw
+        </button>
+        <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-3">
+          <FileText className="size-3.5 fill-current/20" />
+          Generate Brief
+        </button>
+      </div>
+    </div>
+  );
+});
+
+ExtractionView.displayName = "ExtractionView";
+
 export default function Summarizer() {
   const [text, setText] = useState("");
   const [docType, setDocType] = useState<'SAE' | 'SUGAM' | 'MEETING'>('SAE');
@@ -42,7 +141,7 @@ export default function Summarizer() {
   const [result, setResult] = useState<any>(null);
   const [showSamples, setShowSamples] = useState(false);
 
-  const handleSummarize = async () => {
+  const handleSummarize = React.useCallback(async () => {
     if (!text.trim()) return;
     setIsProcessing(true);
     setIsStreaming(true);
@@ -64,7 +163,7 @@ export default function Summarizer() {
       setIsProcessing(false);
       setIsStreaming(false);
     }
-  };
+  }, [text, docType]);
 
   const docTypes = [
     { id: 'SUGAM', label: "SUGAM Checklists" },
@@ -210,106 +309,12 @@ export default function Summarizer() {
 
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
               <AnimatePresence mode="wait">
-                {!result && !isProcessing && !streamedContent && (
-                  <motion.div 
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.3 }}
-                    exit={{ opacity: 0 }}
-                    className="h-full flex flex-col items-center justify-center text-center space-y-8"
-                  >
-                    <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-primary/40 relative">
-                      <FileSearch className="size-10" />
-                      <div className="absolute inset-0 bg-primary/5 rounded-3xl animate-pulse" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-600 uppercase tracking-[0.3em]">Neural Extraction Pending</p>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Select source stream to initiate logic compression</p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {(isStreaming || streamedContent) && !result && (
-                  <motion.div key="streaming" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-                    <div className="flex items-center gap-3 text-primary text-[10px] font-black uppercase tracking-widest animate-pulse border-b border-slate-100 pb-4">
-                      <Cpu className="size-4" />
-                      Analyzing biological and regulatory patterns...
-                    </div>
-                    <div className="prose prose-sm max-w-none text-slate-900 font-mono text-xs leading-loose opacity-80 prose-headings:text-primary prose-headings:uppercase prose-headings:text-[10px] prose-headings:font-black prose-headings:tracking-[0.2em] prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2">
-                      <ReactMarkdown>{streamedContent}</ReactMarkdown>
-                    </div>
-                    {isStreaming && (
-                      <div className="flex gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {result && (
-                  <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                    {/* Header Info */}
-                    <div className="space-y-4">
-                      <h3 className="font-display text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
-                        {result.title || "Logic Extraction Brief"}
-                      </h3>
-                      <div className="flex gap-6 pb-6 border-b border-slate-100">
-                         <div className="flex items-center gap-2">
-                           <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Classification:</span>
-                           <span className="text-[9px] font-black text-secondary uppercase tracking-widest">{result.type || docType}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Confidence:</span>
-                           <span className="text-[9px] font-black text-primary uppercase tracking-widest">{Math.round((result.completeness || 0.95) * 100)}%</span>
-                         </div>
-                      </div>
-                    </div>
-
-                    {/* Metrics Row */}
-                    {result.metrics && (
-                      <div className="grid grid-cols-4 gap-4">
-                        {[
-                          { label: "ROUGE-L", val: result.metrics.rougeL?.toFixed(3), color: "text-primary" },
-                          { label: "BERT-S", val: result.metrics.bertScore?.toFixed(3), color: "text-primary" },
-                          { label: "FIDELITY", val: "99.8%", color: "text-secondary" },
-                          { label: "LATENCY", val: `${result.metrics.latencyMs?.toFixed(0)}MS`, color: "text-slate-500" }
-                        ].map((m, i) => (
-                          <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-sm">
-                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-tighter mb-1">{m.label}</div>
-                            <div className={`text-sm font-black tracking-tighter ${m.color}`}>{m.val}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Compressed Logic Area */}
-                    <div className="relative group/text">
-                      <div className="absolute -left-6 top-0 bottom-0 w-1 bg-slate-100 group-hover/text:bg-primary/30 transition-colors" />
-                      <div className="p-8 rounded-2xl bg-slate-50/70 border border-slate-200 italic font-medium leading-relaxed text-sm text-slate-900 shadow-inner">
-                        "{result.summary}"
-                      </div>
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        <button className="p-2 bg-white/80 text-slate-500 hover:text-primary rounded-lg border border-slate-200 transition-all shadow-sm">
-                          <Copy className="size-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Action Row */}
-                    <div className="flex gap-4">
-                      <button className="flex-1 py-4 bg-slate-100 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-200 transition-all flex items-center justify-center gap-3">
-                        <Download className="size-3.5 text-secondary" />
-                        Export Raw
-                      </button>
-                      <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-3">
-                        <FileText className="size-3.5 fill-current/20" />
-                        Generate Brief
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                <ExtractionView 
+                  result={result} 
+                  isStreaming={isStreaming} 
+                  streamedContent={streamedContent} 
+                  docType={docType} 
+                />
               </AnimatePresence>
             </div>
           </div>

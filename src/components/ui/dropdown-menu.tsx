@@ -12,9 +12,13 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
 }
 
-function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
-}
+const DropdownMenuTrigger = React.forwardRef<
+  HTMLButtonElement,
+  MenuPrimitive.Trigger.Props
+>(({ ...props }, ref) => {
+  return <MenuPrimitive.Trigger ref={ref} data-slot="dropdown-menu-trigger" {...props} />
+})
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger"
 
 function DropdownMenuContent({
   align = "start",
@@ -98,16 +102,15 @@ function DropdownMenuSub({ ...props }: MenuPrimitive.SubmenuRoot.Props) {
   return <MenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />
 }
 
-function DropdownMenuSubTrigger({
-  className,
-  inset,
-  children,
-  ...props
-}: MenuPrimitive.SubmenuTrigger.Props & {
-  inset?: boolean
-}) {
+const DropdownMenuSubTrigger = React.forwardRef<
+  HTMLButtonElement,
+  MenuPrimitive.SubmenuTrigger.Props & {
+    inset?: boolean
+  }
+>(({ className, inset, children, ...props }, ref) => {
   return (
     <MenuPrimitive.SubmenuTrigger
+      ref={ref}
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
@@ -120,7 +123,8 @@ function DropdownMenuSubTrigger({
       <ChevronRightIcon className="ml-auto" />
     </MenuPrimitive.SubmenuTrigger>
   )
-}
+})
+DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger"
 
 function DropdownMenuSubContent({
   align = "start",

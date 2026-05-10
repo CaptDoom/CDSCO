@@ -26,6 +26,103 @@ import { detectAndAnonymize } from "../services/geminiService";
 import { motion, AnimatePresence } from "motion/react";
 import { OPEN_SOURCE_SAMPLES } from "../data/samples";
 
+const AuditTraversal = React.memo(({ results }: { results: any[] }) => {
+  return (
+    <div className="glass-card rounded-2xl p-8 bg-white border border-slate-200 shadow-sm">
+      <h3 className="font-display text-lg font-bold mb-6 flex items-center gap-3 text-slate-900">
+        <Workflow className="text-secondary size-5" />
+        Audit Traversal
+      </h3>
+      <div className="space-y-6">
+        {results.length > 0 ? results.map((ent, i) => (
+          <div key={i} className="flex gap-4 group/ent cursor-default">
+            <div className="flex flex-col items-center">
+               <div className="w-1.5 h-1.5 rounded-full bg-secondary group-hover/ent:bg-primary transition-colors" />
+               <div className="flex-1 w-px bg-slate-200 my-1 group-hover/ent:bg-primary/20" />
+            </div>
+            <div className="flex-1 pb-4">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[9px] font-black text-secondary uppercase tracking-[0.2em] group-hover/ent:text-primary transition-colors">{ent.category}</span>
+                <span className="text-[8px] font-mono text-slate-400 opacity-40">Confidence: 0.99</span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-700 opacity-80 group-hover/ent:opacity-100">{ent.text}</p>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center py-10 opacity-30">
+            <HistoryIcon className="size-8 mx-auto mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest">No active audit hits</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+AuditTraversal.displayName = "AuditTraversal";
+
+const OutputSection = React.memo(({ currentOutput, anonymizedMode, metrics, results }: { currentOutput: string, anonymizedMode: string, metrics: any, results: any[] }) => {
+  if (!currentOutput) return null;
+  return (
+    <motion.div 
+      key="results"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-10"
+    >
+      {/* Header Summary */}
+      <div className="grid grid-cols-4 gap-4">
+         {[
+           { icon: BrainCircuit, label: "Context Accuracy", val: `${Math.round((metrics?.hybrid_audit?.context_confidence || 0.98) * 100)}%`, color: "text-primary" },
+           { icon: MonitorCheck, label: "Compliance Index", val: "CERT-99", color: "text-primary" },
+           { icon: Binary, label: "Token Density", val: `${results.length} hit`, color: "text-secondary" },
+           { icon: ShieldCheck, label: "Risk Factor", val: "LOW", color: "text-primary" },
+         ].map((m, i) => (
+           <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center group hover:border-primary/20 transition-all">
+             <m.icon className={`size-4 mx-auto mb-2 opacity-50 group-hover:opacity-100 ${m.color}`} />
+             <div className="text-[9px] font-black uppercase text-slate-500 tracking-tighter mb-1 opacity-50 group-hover:opacity-100">{m.label}</div>
+             <div className={`text-lg font-black tracking-tighter ${m.color}`}>{m.val}</div>
+           </div>
+         ))}
+      </div>
+
+      {/* Formatted Output */}
+      <div className="relative group/text">
+        <div className="absolute -left-6 top-0 bottom-0 w-1 bg-slate-100 group-hover/text:bg-primary/30 transition-colors" />
+        <div className={`p-8 rounded-2xl border font-mono text-xs leading-loose whitespace-pre-wrap transition-all shadow-inner ${
+          anonymizedMode === 'irreversible' 
+            ? "bg-red-50 border-red-100 text-slate-900 selection:bg-red-200" 
+            : "bg-slate-50 border-slate-200 text-slate-900 selection:bg-primary/20"
+        }`}>
+          {currentOutput}
+        </div>
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button className="p-2 bg-white/80 text-slate-500 hover:text-primary rounded-lg border border-slate-200 transition-all shadow-sm">
+            <FileCode className="size-3.5" />
+          </button>
+          <button className="p-2 bg-white/80 text-slate-500 hover:text-secondary rounded-lg border border-slate-200 transition-all shadow-sm">
+            <Download className="size-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Action Row */}
+      <div className="flex gap-4 pt-6">
+        <button className="flex-1 py-4 bg-slate-50 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-3">
+          <ArrowLeftRight className="size-3.5 text-secondary" />
+          Verification Module
+        </button>
+        <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-secondary/10 hover:brightness-110 transition-all flex items-center justify-center gap-3">
+          <CheckCircle2 className="size-3.5 fill-current/20" />
+          Certify & Commit
+        </button>
+      </div>
+    </motion.div>
+  );
+});
+
+OutputSection.displayName = "OutputSection";
+
 export default function Anonymizer() {
   const [text, setText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,15 +136,15 @@ export default function Anonymizer() {
   const [compliance, setCompliance] = useState<any>(null);
   const [metrics, setMetrics] = useState<any>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => setText(ev.target?.result as string);
     reader.readAsText(file);
-  };
+  }, []);
 
-  const handleProcess = async () => {
+  const handleProcess = React.useCallback(async () => {
     if (!text.trim()) return;
     setIsProcessing(true);
     setResults([]);
@@ -70,9 +167,9 @@ export default function Anonymizer() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [text]);
 
-  const currentOutput = anonymizedMode === 'pseudonymised' ? outputVersions.pseudonymised : outputVersions.irreversible;
+  const currentOutput = React.useMemo(() => anonymizedMode === 'pseudonymised' ? outputVersions.pseudonymised : outputVersions.irreversible, [anonymizedMode, outputVersions]);
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700 min-h-full flex flex-col pb-12">
@@ -254,62 +351,12 @@ export default function Anonymizer() {
                   </motion.div>
                 )}
 
-                {currentOutput && (
-                  <motion.div 
-                    key="results"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-10"
-                  >
-                    {/* Header Summary */}
-                    <div className="grid grid-cols-4 gap-4">
-                       {[
-                         { icon: BrainCircuit, label: "Context Accuracy", val: `${Math.round((metrics?.hybrid_audit?.context_confidence || 0.98) * 100)}%`, color: "text-primary" },
-                         { icon: MonitorCheck, label: "Compliance Index", val: "CERT-99", color: "text-primary" },
-                         { icon: Binary, label: "Token Density", val: `${results.length} hit`, color: "text-secondary" },
-                         { icon: ShieldCheck, label: "Risk Factor", val: "LOW", color: "text-primary" },
-                       ].map((m, i) => (
-                         <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center group hover:border-primary/20 transition-all">
-                           <m.icon className={`size-4 mx-auto mb-2 opacity-50 group-hover:opacity-100 ${m.color}`} />
-                           <div className="text-[9px] font-black uppercase text-slate-500 tracking-tighter mb-1 opacity-50 group-hover:opacity-100">{m.label}</div>
-                           <div className={`text-lg font-black tracking-tighter ${m.color}`}>{m.val}</div>
-                         </div>
-                       ))}
-                    </div>
-
-                    {/* Formatted Output */}
-                    <div className="relative group/text">
-                      <div className="absolute -left-6 top-0 bottom-0 w-1 bg-slate-100 group-hover/text:bg-primary/30 transition-colors" />
-                      <div className={`p-8 rounded-2xl border font-mono text-xs leading-loose whitespace-pre-wrap transition-all shadow-inner ${
-                        anonymizedMode === 'irreversible' 
-                          ? "bg-red-50 border-red-100 text-slate-900 selection:bg-red-200" 
-                          : "bg-slate-50 border-slate-200 text-slate-900 selection:bg-primary/20"
-                      }`}>
-                        {currentOutput}
-                      </div>
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        <button className="p-2 bg-white/80 text-slate-500 hover:text-primary rounded-lg border border-slate-200 transition-all shadow-sm">
-                          <FileCode className="size-3.5" />
-                        </button>
-                        <button className="p-2 bg-white/80 text-slate-500 hover:text-secondary rounded-lg border border-slate-200 transition-all shadow-sm">
-                          <Download className="size-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Action Row */}
-                    <div className="flex gap-4 pt-6">
-                      <button className="flex-1 py-4 bg-slate-50 text-slate-900 font-black uppercase text-[10px] tracking-widest rounded-xl border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-3">
-                        <ArrowLeftRight className="size-3.5 text-secondary" />
-                        Verification Module
-                      </button>
-                      <button className="flex-1 py-4 bg-secondary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-secondary/10 hover:brightness-110 transition-all flex items-center justify-center gap-3">
-                        <CheckCircle2 className="size-3.5 fill-current/20" />
-                        Certify & Commit
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                <OutputSection 
+                  currentOutput={currentOutput} 
+                  anonymizedMode={anonymizedMode} 
+                  metrics={metrics} 
+                  results={results} 
+                />
               </AnimatePresence>
             </div>
           </div>
@@ -317,34 +364,7 @@ export default function Anonymizer() {
 
         {/* Right Col: Audit & Logic */}
         <div className="col-span-12 lg:col-span-3 flex flex-col space-y-8">
-           <div className="glass-card rounded-2xl p-8 bg-white border border-slate-200 shadow-sm">
-              <h3 className="font-display text-lg font-bold mb-6 flex items-center gap-3 text-slate-900">
-                <Workflow className="text-secondary size-5" />
-                Audit Traversal
-              </h3>
-              <div className="space-y-6">
-                {results.length > 0 ? results.map((ent, i) => (
-                  <div key={i} className="flex gap-4 group/ent cursor-default">
-                    <div className="flex flex-col items-center">
-                       <div className="w-1.5 h-1.5 rounded-full bg-secondary group-hover/ent:bg-primary transition-colors" />
-                       <div className="flex-1 w-px bg-slate-200 my-1 group-hover/ent:bg-primary/20" />
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[9px] font-black text-secondary uppercase tracking-[0.2em] group-hover/ent:text-primary transition-colors">{ent.category}</span>
-                        <span className="text-[8px] font-mono text-slate-400 opacity-40">Confidence: 0.99</span>
-                      </div>
-                      <p className="text-[11px] font-bold text-slate-700 opacity-80 group-hover/ent:opacity-100">{ent.text}</p>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-10 opacity-30">
-                    <HistoryIcon className="size-8 mx-auto mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">No active audit hits</p>
-                  </div>
-                )}
-              </div>
-           </div>
+           <AuditTraversal results={results} />
 
            <div className="glass-card rounded-2xl p-8 border-slate-200 bg-slate-50/30">
               <h3 className="font-display text-lg font-bold mb-6 flex items-center gap-3 text-slate-900">

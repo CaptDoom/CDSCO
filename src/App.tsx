@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { 
   Shield,
   FileText, 
@@ -28,13 +28,16 @@ import {
   UserCheck,
   Globe
 } from "lucide-react";
-import Dashboard from "./pages/Dashboard";
-import Anonymizer from "./pages/Anonymizer";
-import SAEBoard from "./pages/SAEBoard";
-import Summarizer from "./pages/Summarizer";
-import Comparison from "./pages/Comparison";
-import Inspection from "./pages/Inspection";
-import Benchmarks from "./pages/Benchmarks";
+
+// Lazy-loaded page components
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Anonymizer = lazy(() => import("./pages/Anonymizer"));
+const SAEBoard = lazy(() => import("./pages/SAEBoard"));
+const Summarizer = lazy(() => import("./pages/Summarizer"));
+const Comparison = lazy(() => import("./pages/Comparison"));
+const Inspection = lazy(() => import("./pages/Inspection"));
+const Benchmarks = lazy(() => import("./pages/Benchmarks"));
+
 import { motion, AnimatePresence } from "motion/react";
 import { realtimeService } from "./services/realtimeService";
 
@@ -147,23 +150,30 @@ export default function App() {
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="min-h-full p-10"
             >
-              {activeTab === "dashboard" && <Dashboard />}
-              {activeTab === "anon" && <Anonymizer />}
-              {activeTab === "sae" && <SAEBoard />}
-              {activeTab === "summarizer" && <Summarizer />}
-              {activeTab === "compare" && <Comparison />}
-              {activeTab === "inspect" && <Inspection />}
-              {activeTab === "benchmarks" && <Benchmarks />}
-              
-              {!["dashboard", "anon", "sae", "summarizer", "compare", "inspect", "benchmarks"].includes(activeTab) && (
-                <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-                  <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6 border border-slate-200">
-                    <Activity className="size-10 text-slate-400 opacity-20" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Module Under Calibration</h2>
-                  <p className="text-slate-500 max-w-md mx-auto">This regulatory module is currently being synchronized. Expected availability in the next system update.</p>
+              <Suspense fallback={
+                <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+                  <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                  <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest animate-pulse">Initializing Neural Node...</p>
                 </div>
-              )}
+              }>
+                {activeTab === "dashboard" && <Dashboard />}
+                {activeTab === "anon" && <Anonymizer />}
+                {activeTab === "sae" && <SAEBoard />}
+                {activeTab === "summarizer" && <Summarizer />}
+                {activeTab === "compare" && <Comparison />}
+                {activeTab === "inspect" && <Inspection />}
+                {activeTab === "benchmarks" && <Benchmarks />}
+                
+                {!["dashboard", "anon", "sae", "summarizer", "compare", "inspect", "benchmarks"].includes(activeTab) && (
+                  <div className="flex flex-col items-center justify-center h-[70vh] text-center">
+                    <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6 border border-slate-200">
+                      <Activity className="size-10 text-slate-400 opacity-20" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Module Under Calibration</h2>
+                    <p className="text-slate-500 max-w-md mx-auto">This regulatory module is currently being synchronized. Expected availability in the next system update.</p>
+                  </div>
+                )}
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </div>

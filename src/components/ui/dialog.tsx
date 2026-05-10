@@ -9,9 +9,13 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
-}
+const DialogTrigger = React.forwardRef<
+  HTMLButtonElement,
+  DialogPrimitive.Trigger.Props
+>(({ ...props }, ref) => {
+  return <DialogPrimitive.Trigger ref={ref} data-slot="dialog-trigger" {...props} />
+})
+DialogTrigger.displayName = "DialogTrigger"
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />

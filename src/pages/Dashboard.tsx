@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   FileText, 
   ShieldCheck, 
@@ -29,6 +29,94 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { realtimeService } from "../services/realtimeService";
+
+const TimelineVisualization = React.memo(({ data }: { data: number[] }) => {
+  return (
+    <div className="glass-card rounded-2xl p-8 relative overflow-hidden bg-white shadow-sm group">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="font-display text-xl font-bold flex items-center gap-3 text-slate-900">
+          <BarChart3 className="text-primary size-6" />
+          Operational Performance Overview
+        </h3>
+        <span className="font-mono text-xs text-slate-600 font-bold opacity-80">Node Uptime: 99.98%</span>
+      </div>
+      
+      <div className="relative h-48 flex items-end justify-between gap-2 px-2">
+        {data.map((height, i) => (
+          <motion.div 
+            key={i}
+            initial={{ height: 0 }}
+            animate={{ height: `${height}%` }}
+            transition={{ duration: 1, delay: i * 0.05, ease: "easeOut" }}
+            className={`flex-1 rounded-t-sm border-t transition-all duration-300 ${
+              i === 6 
+                ? "bg-primary border-primary shadow-sm" 
+                : i < 7 
+                  ? "bg-primary/20 border-primary/40 hover:bg-primary/30" 
+                  : "bg-slate-100 border-slate-200 hover:bg-slate-200"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-5 mt-8 pt-6 border-t border-slate-100">
+        {[
+          { label: "Data Intake", val: "100%", color: "text-primary" },
+          { label: "Scrubbing", val: "94%", color: "text-primary" },
+          { label: "Risk Scan", val: "62%", color: "text-secondary" },
+          { label: "Tech Audit", val: "22%", color: "text-amber-600" },
+          { label: "Final Release", val: "8%", color: "text-slate-400" },
+        ].map((p, i) => (
+          <div key={i} className="text-center group/p cursor-default">
+            <span className="block font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-1 group-hover/p:text-slate-900 transition-colors uppercase font-bold">{p.label}</span>
+            <span className={`${p.color} font-bold text-lg`}>{p.val}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+TimelineVisualization.displayName = "TimelineVisualization";
+
+const FilingItem = React.memo(({ filing, isSelected, onClick }: { filing: any, isSelected: boolean, onClick: (id: string) => void }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      onClick={() => onClick(filing.id)}
+      layout
+      className={`p-4 rounded-r-xl transition-all hover:brightness-95 cursor-pointer group/card border border-transparent border-l-4 ${
+        isSelected ? 'ring-2 ring-primary/20 scale-[0.98]' : ''
+      } ${
+        filing.priority === 'CRITICAL' ? 'bg-red-50 border-red-500 border-red-100' :
+        filing.priority === 'REVIEW' ? 'bg-primary/5 border-primary border-primary/10' :
+        'bg-slate-50 border-slate-300 border-slate-100'
+      }`}
+    >
+      <div className="flex justify-between items-start">
+        <span className="font-bold text-slate-900 text-sm truncate pr-4">{filing.title}</span>
+        <span className={`font-mono text-[9px] font-black border px-1.5 rounded bg-white shadow-sm ${
+          filing.priority === 'CRITICAL' ? 'text-red-600 border-red-200' :
+          filing.priority === 'REVIEW' ? 'text-primary border-primary/20' :
+          'text-slate-700 border-slate-300'
+        }`}>
+          {filing.status}
+        </span>
+      </div>
+      <div className="mt-3 bg-white/50 h-1 rounded-full overflow-hidden">
+         <motion.div 
+           initial={{ width: 0 }}
+           animate={{ width: `${filing.progress}%` }}
+           className={`h-full ${filing.priority === 'CRITICAL' ? 'bg-red-500' : 'bg-primary'}`}
+         />
+      </div>
+      <p className="text-[10px] text-slate-500 mt-2 font-mono uppercase tracking-tighter opacity-80 font-bold">Created: {new Date(filing.createdAt).toLocaleTimeString()}</p>
+    </motion.div>
+  );
+});
+
+FilingItem.displayName = "FilingItem";
 
 export default function Dashboard() {
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
@@ -64,9 +152,9 @@ export default function Dashboard() {
     };
   }, []);
 
-  const selectedFiling = filings.find(f => f.id === selectedFilingId);
+  const selectedFiling = React.useMemo(() => filings.find(f => f.id === selectedFilingId), [filings, selectedFilingId]);
 
-  const handleCreateFiling = async () => {
+  const handleCreateFiling = React.useCallback(async () => {
     try {
       const resp = await fetch("/api/filings", {
         method: "POST",
@@ -81,7 +169,9 @@ export default function Dashboard() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
+
+  const performanceData = React.useMemo(() => [25, 45, 60, 40, 85, 30, 100, 50, 40, 65], []);
 
   return (
     <div className="max-w-[1440px] mx-auto animate-in fade-in duration-700 pb-12">
@@ -112,53 +202,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-12 gap-6 mb-8">
         {/* Main Stats Column */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-          {/* Main Timeline Visualization */}
-          <div className="glass-card rounded-2xl p-8 relative overflow-hidden bg-white shadow-sm group">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-display text-xl font-bold flex items-center gap-3 text-slate-900">
-              <BarChart3 className="text-primary size-6" />
-              Operational Performance Overview
-            </h3>
-            <span className="font-mono text-xs text-slate-600 font-bold opacity-80">Node Uptime: 99.98%</span>
-          </div>
-          
-          <div className="relative h-48 flex items-end justify-between gap-2 px-2">
-            {[25, 45, 60, 40, 85, 30, 100, 50, 40, 65].map((height, i) => (
-              <motion.div 
-                key={i}
-                initial={{ height: 0 }}
-                animate={{ height: `${height}%` }}
-                transition={{ duration: 1, delay: i * 0.05, ease: "easeOut" }}
-                className={`flex-1 rounded-t-sm border-t transition-all duration-300 ${
-                  i === 6 
-                    ? "bg-primary border-primary shadow-sm" 
-                    : i < 7 
-                      ? "bg-primary/20 border-primary/40 hover:bg-primary/30" 
-                      : "bg-slate-100 border-slate-200 hover:bg-slate-200"
-                }`}
-              />
-            ))}
-          </div>
-
-            <div className="grid grid-cols-5 mt-8 pt-6 border-t border-slate-100">
-            {[
-              { label: "Data Intake", val: "100%", color: "text-primary" },
-              { label: "Scrubbing", val: "94%", color: "text-primary" },
-              { label: "Risk Scan", val: "62%", color: "text-secondary" },
-              { label: "Tech Audit", val: "22%", color: "text-amber-600" },
-              { label: "Final Release", val: "8%", color: "text-slate-400" },
-            ].map((p, i) => (
-              <div key={i} className="text-center group/p cursor-default">
-                <span className="block font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-1 group-hover/p:text-slate-900 transition-colors uppercase font-bold">{p.label}</span>
-                <span className={`${p.color} font-bold text-lg`}>{p.val}</span>
-              </div>
-            ))}
-          </div>
+          <TimelineVisualization data={performanceData} />
         </div>
-      </div>
 
-      {/* Priority Queue Column */}
-      <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+        {/* Priority Queue Column */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
           <div className="glass-card rounded-2xl p-8 flex flex-col hover:border-primary/20 transition-colors bg-white shadow-sm h-full max-h-[500px]">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
@@ -170,39 +218,12 @@ export default function Dashboard() {
             <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <AnimatePresence initial={false}>
                 {filings.map((filing) => (
-                  <motion.div 
-                    key={filing.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    onClick={() => setSelectedFilingId(filing.id)}
-                    layout
-                    className={`p-4 rounded-r-xl transition-all hover:brightness-95 cursor-pointer group/card border border-transparent border-l-4 ${
-                      selectedFilingId === filing.id ? 'ring-2 ring-primary/20 scale-[0.98]' : ''
-                    } ${
-                      filing.priority === 'CRITICAL' ? 'bg-red-50 border-red-500 border-red-100' :
-                      filing.priority === 'REVIEW' ? 'bg-primary/5 border-primary border-primary/10' :
-                      'bg-slate-50 border-slate-300 border-slate-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <span className="font-bold text-slate-900 text-sm truncate pr-4">{filing.title}</span>
-                      <span className={`font-mono text-[9px] font-black border px-1.5 rounded bg-white shadow-sm ${
-                        filing.priority === 'CRITICAL' ? 'text-red-600 border-red-200' :
-                        filing.priority === 'REVIEW' ? 'text-primary border-primary/20' :
-                        'text-slate-700 border-slate-300'
-                      }`}>
-                        {filing.status}
-                      </span>
-                    </div>
-                    <div className="mt-3 bg-white/50 h-1 rounded-full overflow-hidden">
-                       <motion.div 
-                         initial={{ width: 0 }}
-                         animate={{ width: `${filing.progress}%` }}
-                         className={`h-full ${filing.priority === 'CRITICAL' ? 'bg-red-500' : 'bg-primary'}`}
-                       />
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-2 font-mono uppercase tracking-tighter opacity-80 font-bold">Created: {new Date(filing.createdAt).toLocaleTimeString()}</p>
-                  </motion.div>
+                  <FilingItem 
+                    key={filing.id} 
+                    filing={filing} 
+                    isSelected={selectedFilingId === filing.id}
+                    onClick={setSelectedFilingId}
+                  />
                 ))}
               </AnimatePresence>
               {filings.length === 0 && (
@@ -213,8 +234,10 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+        </div>
 
-          {/* New: Deep Audit Insights Card */}
+        {/* Priority Insight Column */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
           <AnimatePresence mode="wait">
             {selectedFiling ? (
               <motion.div 
@@ -296,9 +319,11 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
         </div>
+      </div>
 
+      <div className="grid grid-cols-12 gap-6">
         {/* Live Activity Row */}
-        <div className="col-span-12 glass-card rounded-2xl flex flex-col overflow-hidden bg-white shadow-sm border-slate-200">
+        <div className="col-span-12 glass-card rounded-2xl flex flex-col overflow-hidden bg-white shadow-sm border-slate-200 mb-8">
           <div className="px-8 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
             <h3 className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 flex items-center gap-3">
               <Workflow className="size-4 text-primary" />

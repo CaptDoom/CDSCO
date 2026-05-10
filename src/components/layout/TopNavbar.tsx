@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { Search, Clock, HelpCircle } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { NotificationsPanel } from "./NotificationsPanel";
@@ -5,7 +6,6 @@ import { SettingsDialog } from "./SettingsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useEffect, useState } from "react";
 
 export function TopNavbar() {
   const [currentTime, setCurrentTime] = useState(new Date());

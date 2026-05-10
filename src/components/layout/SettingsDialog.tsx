@@ -1,3 +1,4 @@
+import React from "react";
 import { Settings, Globe, Shield, Bell, User, Server } from "lucide-react";
 import {
   Dialog,

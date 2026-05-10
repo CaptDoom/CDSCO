@@ -32,6 +32,150 @@ import { compareDocuments, summarizeDocument } from "../services/geminiService";
 import { motion, AnimatePresence } from "motion/react";
 import { OPEN_SOURCE_SAMPLES } from "../data/samples";
 
+const ComparisonOutput = React.memo(({ result, mode, isProcessing }: { result: any, mode: string, isProcessing: boolean }) => {
+  if (!result && !isProcessing) {
+    return (
+      <motion.div 
+        key="empty"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.3 }}
+        exit={{ opacity: 0 }}
+        className="h-full flex flex-col items-center justify-center text-center space-y-8"
+      >
+        <div className="w-24 h-24 rounded-3xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-primary/40 relative">
+          <FileDiff className="size-12" />
+          <div className="absolute inset-0 bg-primary/5 rounded-3xl animate-pulse" />
+        </div>
+        <div>
+          <p className="text-sm font-black text-slate-900 uppercase tracking-[0.3em]">Analysis Engine Idle</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 opacity-50">Ingest source data to initiate regulatory comparison</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (isProcessing) {
+    return (
+      <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center">
+        <div className="relative mb-10">
+          <Cpu className="size-20 text-primary animate-pulse" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-primary border-transparent animate-spin" />
+        </div>
+        <div className="flex gap-1.5 justify-center">
+           {[0, 1, 2].map(i => (
+             <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
+           ))}
+        </div>
+        <p className="mt-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Cross-referencing CDSCO v4.2 ontologies...</p>
+      </motion.div>
+    );
+  }
+
+  if (result && mode === 'comparison') {
+    return (
+      <motion.div key="comp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+        <div className="relative group/summary">
+          <div className="absolute -left-6 top-0 bottom-0 w-1 bg-secondary/30" />
+          <div className="p-8 rounded-2xl bg-slate-50/50 border border-slate-200 shadow-sm">
+            <p className="mb-4 font-black text-secondary uppercase text-[11px] tracking-[0.2em] flex items-center gap-2">
+              <GanttChart className="size-3.5" />
+              Executive Analysis Summary
+            </p>
+            <p className="text-slate-900 text-sm leading-relaxed font-medium italic opacity-90">
+              "{result.summary}"
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h4 className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-4">Identified Substantive Diffs</h4>
+          <div className="grid gap-4">
+            {result.diffs.map((diff: any, i: number) => (
+              <div key={i} className={`p-6 rounded-2xl border bg-slate-50/30 group transition-all hover:-translate-y-1 shadow-sm ${
+                diff.type === 'ADDITION' ? 'border-primary/20' :
+                diff.type === 'DELETION' ? 'border-red-200' :
+                'border-secondary/20'
+              }`}>
+                <div className="flex justify-between items-center mb-4">
+                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg border shadow-sm ${
+                    diff.type === 'ADDITION' ? 'bg-primary/5 border-primary/20 text-primary' :
+                    diff.type === 'DELETION' ? 'bg-red-50 border-red-200 text-red-600' :
+                    'bg-secondary/5 border-secondary/20 text-secondary'
+                  }`}>
+                    {diff.type}
+                  </span>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button className="p-1.5 hover:text-primary transition-colors text-slate-400"><Copy className="size-3" /></button>
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-slate-900 opacity-80 leading-relaxed group-hover:opacity-100 transition-opacity">
+                  {diff.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (result && mode === 'completeness') {
+    return (
+      <motion.div key="complete" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 flex flex-col items-center justify-center text-center shadow-sm">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 opacity-60">Audit Fidelity</p>
+            <div className="text-5xl font-black text-primary tracking-tighter">
+              {Math.round((result.completeness || 0) * 100)}%
+            </div>
+          </div>
+          <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col items-center justify-center text-center shadow-sm">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 opacity-60">Variance Points</p>
+            <div className="text-5xl font-black text-red-600 tracking-tighter">
+              {result.audit_flags?.length || 0}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h4 className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-4">Verification Checkpoint Status</h4>
+          <div className="grid gap-3">
+            {(result.key_points || []).map((point: string, i: number) => (
+              <div key={i} className="flex items-center gap-4 p-4 bg-slate-50/30 border border-slate-100 rounded-xl transition-all hover:border-primary/20 hover:translate-x-2 group shadow-sm">
+                <div className="size-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
+                  <CheckCircle2 className="size-3" />
+                </div>
+                <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {result.audit_flags?.length > 0 && (
+          <div className="space-y-6">
+            <h4 className="font-mono text-[10px] font-black text-red-600 uppercase tracking-[0.2em] border-b border-red-100 pb-4">Missing Compliance System Connectors</h4>
+            <div className="grid gap-4">
+              {result.audit_flags.map((item: any, i: number) => (
+                <div key={i} className="flex gap-5 p-5 bg-red-50 border border-red-100 rounded-2xl group hover:bg-red-100 transition-all shadow-sm">
+                  <AlertCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">{item.flag} — {item.severity}</p>
+                    <p className="text-[11px] font-bold text-red-800 opacity-70 leading-relaxed font-mono">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
+  return null;
+});
+
+ComparisonOutput.displayName = "ComparisonOutput";
+
 export default function Comparison() {
   const [mode, setMode] = useState<'comparison' | 'completeness'>('comparison');
   const [docA, setDocA] = useState("");
@@ -41,7 +185,7 @@ export default function Comparison() {
   const [result, setResult] = useState<any>(null);
   const [showSamples, setShowSamples] = useState(false);
 
-  const handleAction = async () => {
+  const handleAction = React.useCallback(async () => {
     if (mode === 'comparison') {
       if (!docA.trim() || !docB.trim()) return;
       setIsProcessing(true);
@@ -65,7 +209,7 @@ export default function Comparison() {
         setIsProcessing(false);
       }
     }
-  };
+  }, [mode, docA, docB, docCheck]);
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700 min-h-full flex flex-col pb-12">
@@ -246,135 +390,11 @@ export default function Comparison() {
             
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white/30">
               <AnimatePresence mode="wait">
-                {!result && !isProcessing && (
-                  <motion.div 
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.3 }}
-                    exit={{ opacity: 0 }}
-                    className="h-full flex flex-col items-center justify-center text-center space-y-8"
-                  >
-                    <div className="w-24 h-24 rounded-3xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-primary/40 relative">
-                      <FileDiff className="size-12" />
-                      <div className="absolute inset-0 bg-primary/5 rounded-3xl animate-pulse" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-900 uppercase tracking-[0.3em]">Analysis Engine Idle</p>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 opacity-50">Ingest source data to initiate regulatory comparison</p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {isProcessing && (
-                  <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center">
-                    <div className="relative mb-10">
-                      <Cpu className="size-20 text-primary animate-pulse" />
-                      <div className="absolute inset-0 rounded-full border-4 border-t-primary border-transparent animate-spin" />
-                    </div>
-                    <div className="flex gap-1.5 justify-center">
-                       {[0, 1, 2].map(i => (
-                         <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
-                       ))}
-                    </div>
-                    <p className="mt-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Cross-referencing CDSCO v4.2 ontologies...</p>
-                  </motion.div>
-                )}
-
-                {result && mode === 'comparison' && (
-                  <motion.div key="comp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                    <div className="relative group/summary">
-                      <div className="absolute -left-6 top-0 bottom-0 w-1 bg-secondary/30" />
-                      <div className="p-8 rounded-2xl bg-slate-50/50 border border-slate-200 shadow-sm">
-                        <p className="mb-4 font-black text-secondary uppercase text-[11px] tracking-[0.2em] flex items-center gap-2">
-                          <GanttChart className="size-3.5" />
-                          Executive Analysis Summary
-                        </p>
-                        <p className="text-slate-900 text-sm leading-relaxed font-medium italic opacity-90">
-                          "{result.summary}"
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <h4 className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-4">Identified Substantive Diffs</h4>
-                      <div className="grid gap-4">
-                        {result.diffs.map((diff: any, i: number) => (
-                          <div key={i} className={`p-6 rounded-2xl border bg-slate-50/30 group transition-all hover:-translate-y-1 shadow-sm ${
-                            diff.type === 'ADDITION' ? 'border-primary/20' :
-                            diff.type === 'DELETION' ? 'border-red-200' :
-                            'border-secondary/20'
-                          }`}>
-                            <div className="flex justify-between items-center mb-4">
-                              <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg border shadow-sm ${
-                                diff.type === 'ADDITION' ? 'bg-primary/5 border-primary/20 text-primary' :
-                                diff.type === 'DELETION' ? 'bg-red-50 border-red-200 text-red-600' :
-                                'bg-secondary/5 border-secondary/20 text-secondary'
-                              }`}>
-                                {diff.type}
-                              </span>
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                <button className="p-1.5 hover:text-primary transition-colors text-slate-400"><Copy className="size-3" /></button>
-                              </div>
-                            </div>
-                            <p className="text-xs font-bold text-slate-900 opacity-80 leading-relaxed group-hover:opacity-100 transition-opacity">
-                              {diff.content}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {result && mode === 'completeness' && (
-                  <motion.div key="complete" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 flex flex-col items-center justify-center text-center shadow-sm">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 opacity-60">Audit Fidelity</p>
-                        <div className="text-5xl font-black text-primary tracking-tighter">
-                          {Math.round((result.completeness || 0) * 100)}%
-                        </div>
-                      </div>
-                      <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col items-center justify-center text-center shadow-sm">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 opacity-60">Variance Points</p>
-                        <div className="text-5xl font-black text-red-600 tracking-tighter">
-                          {result.audit_flags?.length || 0}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <h4 className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-4">Verification Checkpoint Status</h4>
-                      <div className="grid gap-3">
-                        {(result.key_points || []).map((point: string, i: number) => (
-                          <div key={i} className="flex items-center gap-4 p-4 bg-slate-50/30 border border-slate-100 rounded-xl transition-all hover:border-primary/20 hover:translate-x-2 group shadow-sm">
-                            <div className="size-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
-                              <CheckCircle2 className="size-3" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{point}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {result.audit_flags?.length > 0 && (
-                      <div className="space-y-6">
-                        <h4 className="font-mono text-[10px] font-black text-red-600 uppercase tracking-[0.2em] border-b border-red-100 pb-4">Missing Compliance System Connectors</h4>
-                        <div className="grid gap-4">
-                          {result.audit_flags.map((item: any, i: number) => (
-                            <div key={i} className="flex gap-5 p-5 bg-red-50 border border-red-100 rounded-2xl group hover:bg-red-100 transition-all shadow-sm">
-                              <AlertCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">{item.flag} — {item.severity}</p>
-                                <p className="text-[11px] font-bold text-red-800 opacity-70 leading-relaxed font-mono">{item.description}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
+                <ComparisonOutput 
+                  result={result} 
+                  mode={mode} 
+                  isProcessing={isProcessing} 
+                />
               </AnimatePresence>
             </div>
           </div>
