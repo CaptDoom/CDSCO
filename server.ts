@@ -5,6 +5,7 @@ import { createServer as createViteServer } from "vite";
 import crypto from "crypto";
 import http from "http";
 import { Server } from "socket.io";
+import { Pinecone } from "@pinecone-database/pinecone";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,10 +74,155 @@ function generalize(text: string, category: string): string {
   }
 }
 
+let pineconeClient: Pinecone | null = null;
+
+function getPinecone() {
+  if (!pineconeClient) {
+    const apiKey = process.env.PINECONE_API_KEY;
+    if (!apiKey) {
+      throw new Error("PINECONE_API_KEY environment variable is required");
+    }
+    pineconeClient = new Pinecone({ apiKey });
+  }
+  return pineconeClient;
+}
+
+// --- REGULATORY FILING SYSTEM (Enterprise Grade Logic) ---
+interface Filing {
+  id: string;
+  userId: string;
+  title: string;
+  status: "PENDING" | "SCRUBBING" | "AUDITING" | "APPROVED" | "REJECTED";
+  progress: number;
+  priority: "CRITICAL" | "REVIEW" | "VALIDATE";
+  metadata: any;
+  aiAnalysis?: {
+    riskScore: number;
+    findings: {
+      type: string;
+      label: string;
+      confidence: number;
+      source?: string;
+    }[];
+    vitals?: {
+      p_value: number;
+      sampleSize: number;
+      dosageConsistency: string;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+const filings: Map<string, Filing> = new Map();
+
+// Simulated Task Queue for Async Processing
+const taskQueue: string[] = [];
+let isProcessing = false;
+
+async function processQueue(io: Server) {
+  if (isProcessing || taskQueue.length === 0) return;
+  isProcessing = true;
+
+  const filingId = taskQueue.shift();
+  const filing = filings.get(filingId!);
+
+  if (filing) {
+    // 1. Scrubbing Stage
+    filing.status = "SCRUBBING";
+    filing.progress = 25;
+    io.emit("filing-updated", filing);
+    io.emit("regulatory-event", {
+      id: crypto.randomUUID(),
+      message: `PII scrubbing initiated for [${filing.title}]`,
+      severity: "INFO",
+      timestamp: new Date().toISOString()
+    });
+    await new Promise(r => setTimeout(r, 2000));
+
+    // 2. Auditing Stage (Simulated AI Orchestration)
+    filing.status = "AUDITING";
+    filing.progress = 65;
+    io.emit("filing-updated", filing);
+    io.emit("regulatory-event", {
+      id: crypto.randomUUID(),
+      message: `LangGraph Orchestrator: Initiating cross-ref for [${filing.title}]`,
+      severity: "WARNING",
+      timestamp: new Date().toISOString()
+    });
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Simulated Analysis Logic
+    filing.aiAnalysis = {
+      riskScore: Math.floor(Math.random() * 30) + 10,
+      findings: [
+        { type: "RAG_MATCH", label: "CDSCO Drug Schedule H Match", confidence: 0.98, source: "Schedule_H_2024.pdf" },
+        { type: "BERT_ENTITY", label: "Adverse Reaction: Hepatotoxicity", confidence: 0.89 },
+        { type: "CONSISTENCY", label: "Dose Delta < 2%", confidence: 0.94 }
+      ],
+      vitals: {
+        p_value: 0.042,
+        sampleSize: 1200,
+        dosageConsistency: "HIGH"
+      }
+    };
+    
+    io.emit("filing-updated", filing);
+    await new Promise(r => setTimeout(r, 2500));
+
+    // 3. Finalization
+    filing.status = "APPROVED";
+    filing.progress = 100;
+    filing.updatedAt = new Date().toISOString();
+    io.emit("filing-updated", filing);
+    io.emit("regulatory-event", {
+      id: crypto.randomUUID(),
+      message: `Filing [${filing.title}] finalized. Multi-agent consensus achieved.`,
+      severity: "SUCCESS",
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  isProcessing = false;
+  processQueue(io);
+}
+
+// Initial Mock Filings
+const INITIAL_FILINGS: Filing[] = [
+  {
+    id: "778",
+    userId: "OFFICER_1",
+    title: "Vaccine Batch #778",
+    status: "AUDITING",
+    progress: 45,
+    priority: "CRITICAL",
+    metadata: { type: "vaccine", batch: "V-2024-X" },
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: "B-ALPHA",
+    userId: "OFFICER_2",
+    title: "Generic Form-B Alpha",
+    status: "PENDING",
+    progress: 0,
+    priority: "REVIEW",
+    metadata: { type: "generic", drug: "Paracetamol-A" },
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    updatedAt: new Date(Date.now() - 7200000).toISOString()
+  }
+];
+INITIAL_FILINGS.forEach(f => filings.set(f.id, f));
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
-  const io = new Server(server);
+  const io = new Server(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
   const PORT = 3000;
 
   app.use(express.json({ limit: "20mb" }));
@@ -87,36 +233,30 @@ async function startServer() {
     socket.emit("system-status", {
       status: "STABLE",
       node: "SENTINEL-01",
-      sync: "ACTIVE"
+      sync: "ACTIVE",
+      activeFilings: filings.size
     });
+    
+    // Send current filings state to newly connected client
+    socket.emit("filings-init", Array.from(filings.values()));
   });
 
-  // Regulatory Event Loop
-  const EVENT_TEMPLATES = [
-    { msg: "SUGAM Submission #$ID validated", severity: "INFO" },
-    { msg: "SAE Alert: Clinical site $SITE reported elevated risk", severity: "CRITICAL" },
-    { msg: "Audit Log synchronization complete (Node $NODE)", severity: "SUCCESS" },
+  // Regulatory Event Loop (Random system noise)
+  const SYSTEM_NOISE = [
     { msg: "Neural weights re-balanced for ClinicalBERT v4.2", severity: "INFO" },
-    { msg: "GPU Cluster $NODE at 85% capacity", severity: "WARNING" },
+    { msg: "GPU Cluster #01 at 85% capacity", severity: "WARNING" },
     { msg: "Anonymization rules updated by CDSCO-ADMIN", severity: "SUCCESS" }
   ];
-
-  const SITES = ["AIIMS Delhi", "PGIMER", "CMC Vellore", "Apollo Chennai", "Zydus Cadila Lab"];
   
   setInterval(() => {
-    const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
-    const message = template.msg
-      .replace("$ID", Math.floor(Math.random() * 90000 + 10000).toString())
-      .replace("$SITE", SITES[Math.floor(Math.random() * SITES.length)])
-      .replace("$NODE", Math.floor(Math.random() * 5 + 1).toString());
-
+    const template = SYSTEM_NOISE[Math.floor(Math.random() * SYSTEM_NOISE.length)];
     io.emit("regulatory-event", {
       id: crypto.randomUUID(),
-      message,
+      message: template.msg,
       severity: template.severity,
       timestamp: new Date().toISOString()
     });
-  }, 4000);
+  }, 12000);
 
   app.get("/api/health", (req, res) => {
     res.json({ 
@@ -125,6 +265,35 @@ async function startServer() {
       config: CONFIG,
       timestamp: new Date().toISOString() 
     });
+  });
+
+  // Filings API
+  app.get("/api/filings", (req, res) => {
+    res.json(Array.from(filings.values()));
+  });
+
+  app.post("/api/filings", (req, res) => {
+    const { title, priority, metadata } = req.body;
+    const newFiling: Filing = {
+      id: crypto.randomBytes(4).toString("hex").toUpperCase(),
+      userId: "OFFICER_CURRENT",
+      title: title || "Unnamed Filing",
+      status: "PENDING",
+      progress: 0,
+      priority: priority || "VALIDATE",
+      metadata: metadata || {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    filings.set(newFiling.id, newFiling);
+    taskQueue.push(newFiling.id);
+    io.emit("filing-created", newFiling);
+    
+    // Start background processing
+    processQueue(io);
+
+    res.status(202).json(newFiling);
   });
 
   // Audit Log Endpoint
@@ -178,6 +347,46 @@ async function startServer() {
 
   app.post("/api/sync/mdonline", (req, res) => {
     res.json({ status: "STUB_SYNC_SUCCESS", target: "MD_ONLINE_PORTAL", timestamp: new Date().toISOString() });
+  });
+
+  // --- PINECONE INTEGRATION ---
+  app.post("/api/pinecone/search", async (req, res) => {
+    try {
+      const { vector, topK = 5 } = req.body;
+      const indexName = process.env.PINECONE_INDEX;
+      if (!indexName) throw new Error("PINECONE_INDEX is not configured");
+
+      const pc = getPinecone();
+      const index = pc.index(indexName);
+      
+      const queryResponse = await index.query({
+        vector,
+        topK,
+        includeMetadata: true
+      });
+
+      res.json(queryResponse);
+    } catch (error: any) {
+      console.error("[PINECONE SEARCH ERROR]", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/pinecone/upsert", async (req, res) => {
+    try {
+      const { vectors } = req.body; // Array of { id, values, metadata }
+      const indexName = process.env.PINECONE_INDEX;
+      if (!indexName) throw new Error("PINECONE_INDEX is not configured");
+
+      const pc = getPinecone();
+      const index = pc.index(indexName);
+
+      await index.upsert(vectors);
+      res.json({ status: "SUCCESS", count: vectors.length });
+    } catch (error: any) {
+      console.error("[PINECONE UPSERT ERROR]", error);
+      res.status(500).json({ error: error.message });
+    }
   });
 
   if (process.env.NODE_ENV !== "production") {

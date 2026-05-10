@@ -1,6 +1,6 @@
 {
-  "name": "CDSCO Aura AI",
-  "description": "Real-time AI Regulatory Compliance Platform with PII/PHI Anonymisation, SAE Classification, and Document Delta Analysis for the Central Drugs Standard Control Organisation.",
+  "name": "IndiaAI-CDSCO Regulatory Sentinel",
+  "description": "AI-Driven Regulatory Workflow Automation & Data Anonymisation Platform for the CDSCO-IndiaAI Health Innovation Hackathon. Compliant with DPDP Act 2023.",
   "requestFramePermissions": [
     "camera",
     "microphone"

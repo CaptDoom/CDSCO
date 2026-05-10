@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  ShieldAlert,
-  ShieldCheck, 
+  Shield,
   FileText, 
   Search, 
   Settings, 
@@ -19,7 +18,15 @@ import {
   Zap,
   BrainCircuit,
   Clock,
-  Server
+  Server,
+  HelpCircle,
+  LogOut,
+  Users,
+  CheckCircle,
+  BarChart,
+  Brain,
+  UserCheck,
+  Globe
 } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Anonymizer from "./pages/Anonymizer";
@@ -27,187 +34,118 @@ import SAEBoard from "./pages/SAEBoard";
 import Summarizer from "./pages/Summarizer";
 import Comparison from "./pages/Comparison";
 import Inspection from "./pages/Inspection";
-import AuditLog from "./pages/AuditLog";
 import Benchmarks from "./pages/Benchmarks";
 import { motion, AnimatePresence } from "motion/react";
 import { realtimeService } from "./services/realtimeService";
 
+import { TopNavbar } from "./components/layout/TopNavbar";
+import { useAuth } from "./hooks/useAuth";
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     realtimeService.connect();
     const unsubscribeStatus = realtimeService.subscribeStatus(setSystemStatus);
     
     return () => {
-      clearInterval(timer);
       unsubscribeStatus();
     };
   }, []);
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "anon", label: "Anonymisation", icon: EyeOff },
-    { id: "sae", label: "SAE Case Board", icon: Activity },
-    { id: "summarizer", label: "Summarisation", icon: FileText },
-    { id: "compare", label: "Comparison Tool", icon: ArrowLeftRight },
-    { id: "inspect", label: "Inspection Docs", icon: ClipboardCheck },
-    { id: "benchmarks", label: "Technical Audit", icon: Zap },
-    { id: "audit", label: "Blockchain Log", icon: ShieldCheck },
+    { id: "dashboard", label: "System Overview", icon: LayoutDashboard },
+    { id: "anon", label: "PII/PHI Anonymisation", icon: EyeOff },
+    { id: "summarizer", label: "Document Summarisation", icon: Zap },
+    { id: "compare", label: "Completeness & Comparison", icon: ArrowLeftRight },
+    { id: "sae", label: "Severity Classification", icon: Shield },
+    { id: "inspect", label: "Inspection Report Gen", icon: ClipboardCheck },
+    { id: "benchmarks", label: "Technical Robustness", icon: Activity },
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-[#1E293B] font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-[#E2E8F0] flex flex-col shadow-sm z-30">
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-11 h-11 bg-gradient-to-br from-[#0F4C81] to-[#1a5f9b] rounded-xl flex items-center justify-center shadow-xl shadow-blue-900/20 ring-1 ring-white/20">
-              <ShieldAlert className="text-white size-6 drop-shadow-md" />
+      <aside className="fixed left-0 top-0 h-full w-72 flex flex-col pt-20 pb-6 bg-white border-r border-slate-200 z-40 transition-all duration-300">
+        <div className="px-6 mb-8">
+          <div className="flex items-center gap-4 p-3 bg-slate-900 rounded-xl border border-white/10 shadow-xl overflow-hidden relative group">
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-lg border border-primary/20 shadow-sm relative z-10">
+              <Shield className="text-primary size-5 fill-primary/20" />
             </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tighter text-[#0F4C81] leading-none">AURA</h1>
-              <p className="text-[8px] text-gray-400 font-bold tracking-[0.2em] uppercase mt-1.5 opacity-80">Regulatory AI Node</p>
+            <div className="relative z-10">
+              <div className="font-display text-lg font-black text-white leading-tight tracking-tighter">IndiaAI-CDSCO</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-primary font-bold">SENTINEL NODE</div>
             </div>
           </div>
-
-          <nav className="space-y-1">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative ${
-                  activeTab === item.id 
-                    ? "bg-[#0F4C81] text-white shadow-md shadow-blue-900/10" 
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
-              >
-                <item.icon className={`size-4 transition-colors ${activeTab === item.id ? "text-white" : "group-hover:text-[#0F4C81]"}`} />
-                <span className="text-xs font-bold">{item.label}</span>
-              </button>
-            ))}
-          </nav>
         </div>
 
-        <div className="mt-auto p-6 space-y-4">
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-             <div className="flex items-center gap-2 mb-2">
-               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-               <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Active Node</span>
-             </div>
-             <p className="text-[10px] font-bold text-[#0F4C81] uppercase">{systemStatus?.node || "SENTINEL-01"}</p>
-             <p className="text-[8px] text-gray-400 font-bold uppercase mt-1">Uptime: 14:02:44:11</p>
-          </div>
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-[#0F4C81] transition-colors">
-              <Info className="size-4" />
-              <span className="text-xs font-bold">Support</span>
+        <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar px-3">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 group relative ${
+                activeTab === item.id 
+                  ? "bg-primary/10 text-primary border-l-4 border-primary" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <item.icon className={`size-5 transition-all duration-300 ${activeTab === item.id ? "text-primary scale-110 opacity-100" : "opacity-70 group-hover:opacity-100 group-hover:text-primary group-hover:scale-110"}`} />
+              <span className={`text-sm font-bold uppercase tracking-wide transition-all ${activeTab === item.id ? "translate-x-1" : "group-hover:translate-x-1"}`}>
+                {item.label}
+              </span>
+              {activeTab === item.id && (
+                <motion.div 
+                  layoutId="activeTabGlow"
+                  className="absolute inset-0 bg-primary/5 rounded-xl -z-10"
+                />
+              )}
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-[#0F4C81] transition-colors">
-              <FileText className="size-4" />
-              <span className="text-xs font-bold">Documentation</span>
+          ))}
+        </nav>
+
+        <div className="mt-auto px-6 pt-6 border-t border-slate-200 space-y-4">
+          <button className="w-full bg-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md hover:shadow-lg hover:brightness-110">
+            <Zap className="size-4" fill="currentColor" />
+            <span className="uppercase text-xs tracking-widest font-black">Generate Report</span>
+          </button>
+          
+          <div className="space-y-1">
+            <button className="w-full flex items-center gap-4 px-4 py-2 text-slate-500 hover:text-slate-900 transition-all group">
+              <Server className="size-4 group-hover:text-primary transition-colors" />
+              <span className="text-[11px] font-bold uppercase tracking-widest">System Status</span>
+            </button>
+            <button 
+              onClick={signOut}
+              className="w-full flex items-center gap-4 px-4 py-2 text-slate-500 hover:text-red-600 transition-all group"
+            >
+              <LogOut className="size-4 group-hover:rotate-12 transition-transform" />
+              <span className="text-[11px] font-bold uppercase tracking-widest">Log Out</span>
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-[#F8FAFC]">
-        {/* Header */}
-        <header className="h-16 border-b border-gray-100 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex-1 max-w-xl flex items-center gap-8">
-             <div className="flex items-center gap-2.5 text-gray-400 border-r border-gray-100 pr-8">
-               <Clock className="size-3.5 text-[#0F4C81]/40" />
-               <span className="text-[10px] font-bold font-mono tracking-tighter tabular-nums text-[#0F4C81]">
-                 {currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} IST
-               </span>
-             </div>
-             <div className="flex-1">
-               {activeTab === 'dashboard' ? (
-                  <div className="relative group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 group-focus-within:text-[#0F4C81] transition-colors" />
-                    <input 
-                      type="text" 
-                      placeholder="Search applications, SAE IDs, or regulatory documents..."
-                      className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#0F4C81]/20 focus:border-[#0F4C81] transition-all"
-                    />
-                  </div>
-               ) : (
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    RAHA Platform <span className="mx-2 text-gray-200">|</span> <span className="text-gray-600">{activeTab.replace('-', ' ')}</span>
-                  </div>
-               )}
-             </div>
-          </div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col relative overflow-hidden pl-72">
+        <TopNavbar />
+
+        {/* View Content Canvas */}
+        <div className="flex-1 pt-16 overflow-y-auto custom-scrollbar bg-slate-50 relative">
+          <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-secondary/5 blur-[100px] rounded-full translate-y-1/4 -translate-x-1/4 pointer-events-none" />
           
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setActiveTab('audit')}
-                className={`p-2 transition-colors ${activeTab === 'audit' ? 'text-[#0F4C81] bg-blue-50 rounded-lg' : 'text-gray-400 hover:text-[#0F4C81]'}`}
-                title="System Audit Trial"
-              >
-                <HistoryIcon className="size-5" />
-              </button>
-              
-              <div className="relative group/notif">
-                <button className="p-2 text-gray-400 hover:text-[#0F4C81] transition-colors relative">
-                  <Bell className="size-5" />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-[#E2E8F0] shadow-xl rounded-xl invisible group-hover:notif:visible opacity-0 group-hover/notif:opacity-100 transition-all z-50 p-4">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Notifications</p>
-                  <div className="space-y-3">
-                    <div className="p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-colors cursor-pointer">
-                      <p className="text-xs font-bold text-gray-700">New SAE Critical Report</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Batch #442 ingestion complete. Risk: HIGH.</p>
-                    </div>
-                    <div className="p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-colors cursor-pointer">
-                      <p className="text-xs font-bold text-gray-700">Audit Node Sync</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Blockchain ledger verified for last 100 tx.</p>
-                    </div>
-                  </div>
-                  <button className="w-full mt-4 py-2 text-[10px] font-bold text-[#0F4C81] uppercase text-center hover:underline">View all alerts</button>
-                </div>
-              </div>
-
-              <div className="relative group/user">
-                <button className="p-2 text-gray-400 hover:text-[#0F4C81] transition-colors">
-                  <UserIcon className="size-5" />
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#E2E8F0] shadow-xl rounded-xl invisible group-hover/user:visible opacity-0 group-hover/user:opacity-100 transition-all z-50 p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="size-8 bg-gray-100 rounded-lg flex items-center justify-center text-[#0F4C81] font-bold text-xs">VK</div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-700">Vaibhav K.</p>
-                      <p className="text-[9px] text-gray-400">Senior Evaluator</p>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <button className="w-full text-left px-2 py-1.5 text-xs font-bold text-gray-500 hover:text-[#0F4C81] hover:bg-gray-50 rounded-md transition-colors">Profile Settings</button>
-                    <button className="w-full text-left px-2 py-1.5 text-xs font-bold text-gray-500 hover:text-[#0F4C81] hover:bg-gray-50 rounded-md transition-colors">Security Logs</button>
-                    <div className="border-t border-gray-100 my-2" />
-                    <button className="w-full text-left px-2 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-md transition-colors">Sign Out</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.99 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="min-h-full p-10"
             >
               {activeTab === "dashboard" && <Dashboard />}
               {activeTab === "anon" && <Anonymizer />}
@@ -216,12 +154,20 @@ export default function App() {
               {activeTab === "compare" && <Comparison />}
               {activeTab === "inspect" && <Inspection />}
               {activeTab === "benchmarks" && <Benchmarks />}
-              {activeTab === "audit" && <AuditLog />}
+              
+              {!["dashboard", "anon", "sae", "summarizer", "compare", "inspect", "benchmarks"].includes(activeTab) && (
+                <div className="flex flex-col items-center justify-center h-[70vh] text-center">
+                  <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6 border border-slate-200">
+                    <Activity className="size-10 text-slate-400 opacity-20" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2">Module Under Calibration</h2>
+                  <p className="text-slate-500 max-w-md mx-auto">This regulatory module is currently being synchronized. Expected availability in the next system update.</p>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
     </div>
-
   );
 }

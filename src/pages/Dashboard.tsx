@@ -2,376 +2,493 @@ import { useState, useEffect } from "react";
 import { 
   FileText, 
   ShieldCheck, 
-  AlertCircle, 
   Activity, 
   TrendingUp, 
-  CheckCircle2, 
-  AlertTriangle, 
   Clock, 
   CloudLightning, 
   Zap,
   Target,
-  ArrowRight,
-  LayoutDashboard,
-  User as UserIcon,
   RefreshCw,
   ClipboardCheck,
-  History as HistoryIcon
+  BarChart3, 
+  AlertCircle, 
+  Lock, 
+  Cpu, 
+  Network,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  LayoutDashboard,
+  History as HistoryIcon,
+  Server,
+  Workflow,
+  ShieldAlert,
+  BrainCircuit,
+  Binary,
+  MonitorCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { realtimeService } from "../services/realtimeService";
 
 export default function Dashboard() {
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
-  const [queue, setQueue] = useState([
-    { id: "#SAE-2023-9021", entity: "Biotech Pharma Ltd.", type: "SAE Phase III", severity: "Death", sColor: "red" },
-    { id: "#NDA-441-X001", entity: "Apex Health Sol.", type: "NDA Filing", severity: "Hospitalization", sColor: "blue" },
-    { id: "#SAE-2023-8842", entity: "Generic Corp India", type: "Pharmacovigilance", severity: "Disability", sColor: "amber" },
-    { id: "#VAR-229-771", entity: "Zenith Pharmaceuticals", type: "Post-Market Var.", severity: "Other", sColor: "gray" },
-  ]);
+  const [filings, setFilings] = useState<any[]>([]);
+  const [systemStatus, setSystemStatus] = useState<any>({ status: "CONNECTING...", node: "NODE-01" });
+  const [selectedFilingId, setSelectedFilingId] = useState<string | null>(null);
 
   useEffect(() => {
     realtimeService.connect();
     
-    const unsubscribe = realtimeService.subscribeEvents((event) => {
-      setLiveEvents(prev => [event, ...prev].slice(0, 5));
+    const unsubEvents = realtimeService.subscribeEvents((event) => {
+      setLiveEvents(prev => [event, ...prev].slice(0, 10));
     });
 
-    const interval = setInterval(() => {
-      setQueue(prev => {
-        const next = [...prev];
-        if (Math.random() > 0.8) {
-           next.unshift({
-             id: `#SGM-${Math.floor(Math.random() * 9000) + 1000}`,
-             entity: "Incoming Application...",
-             type: "SUGAM Sync",
-             severity: "New",
-             sColor: "blue"
-           });
-           if (next.length > 6) next.pop();
-        }
-        return next;
-      });
-    }, 8000);
+    const unsubFilings = realtimeService.subscribeFilings((update) => {
+      if (update.type === 'INIT') {
+        setFilings(update.data);
+      } else if (update.type === 'CREATED') {
+        setFilings(prev => [update.data, ...prev]);
+      } else if (update.type === 'UPDATED') {
+        setFilings(prev => prev.map(f => f.id === update.data.id ? update.data : f));
+      }
+    });
+
+    const unsubStatus = realtimeService.subscribeStatus((status) => {
+      setSystemStatus(status);
+    });
 
     return () => {
-      unsubscribe();
-      clearInterval(interval);
+      unsubEvents();
+      unsubFilings();
+      unsubStatus();
     };
   }, []);
 
-  const stats = [
-    { 
-      label: "REGULATORY STREAMLINING", 
-      value: "84%", 
-      change: "Ready for Fast-Track", 
-      icon: TrendingUp, 
-      color: "blue" 
-    },
-    { 
-      label: "TOTAL SCAN VOLUME", 
-      value: "14,842", 
-      change: "+14.2% this month", 
-      icon: FileText, 
-      color: "green" 
-    },
-    { 
-      label: "ANONYMISATION CONFIDENCE", 
-      value: "99.2%", 
-      change: "Verified (DPDP 2023)", 
-      icon: ShieldCheck, 
-      color: "red" 
-    },
-    { 
-      label: "CDSCO APPROVAL VELOCITY", 
-      value: "1.4d", 
-      change: "Avg. Review Time", 
-      icon: Zap, 
-      color: "indigo" 
-    }
-  ];
+  const selectedFiling = filings.find(f => f.id === selectedFilingId);
 
-  const activities = [
-    { 
-      user: "System Logic", 
-      action: "Completed Step-2 (Irreversible) for", 
-      target: "Lilly Pharma SAE-002", 
-      time: "4 mins ago", 
-      location: "Encryption Node 4",
-      type: "success"
-    },
-    { 
-      user: "N. Sharma (SRO)", 
-      action: "Verified integrity of", 
-      target: "AstraZeneca NDA-49", 
-      time: "12 mins ago", 
-      location: "CDSCO Mumbai",
-      type: "success"
-    },
-    { 
-      user: "AI Engine", 
-      action: "Detected PHI Leak in", 
-      target: "Generic-Tab-X1", 
-      time: "45 mins ago", 
-      location: "Pre-Scrub Audit",
-      type: "alert"
-    },
-    { 
-      user: "Batch Manager", 
-      action: "Ingested 2.4GB PHI-Sensitive Data", 
-      target: "AIIMS PV Data", 
-      time: "1 hour ago", 
-      location: "Bulk Sync",
-      type: "system"
+  const handleCreateFiling = async () => {
+    try {
+      const resp = await fetch("/api/filings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `New Batch Ingestion #${Math.floor(Math.random() * 1000)}`,
+          priority: Math.random() > 0.5 ? "CRITICAL" : "REVIEW",
+          metadata: { type: "clinical_trial", trigger: "manual" }
+        })
+      });
+      if (!resp.ok) throw new Error("Failed to create filing");
+    } catch (err) {
+      console.error(err);
     }
-  ];
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <motion.div 
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white border border-[#E2E8F0] p-6 rounded-xl shadow-sm relative group overflow-hidden"
+    <div className="max-w-[1440px] mx-auto animate-in fade-in duration-700 pb-12">
+      {/* Page Header */}
+      <header className="flex justify-between items-end mb-8">
+        <div>
+          <h1 className="font-display text-4xl font-bold text-slate-900 tracking-tight">IndiaAI-CDSCO Regulatory Sentinel</h1>
+          <p className="text-slate-600 font-bold mt-1 uppercase text-[10px] tracking-widest opacity-80">Health Innovation Acceleration Hackathon // NODE: {systemStatus.node}</p>
+        </div>
+        <div className="flex gap-4">
+          <div className="bg-white px-4 py-2 rounded-xl border border-slate-300 flex items-center gap-3 shadow-sm group cursor-default">
+            <span className="relative flex h-2 w-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${systemStatus.status === 'STABLE' ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${systemStatus.status === 'STABLE' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+            </span>
+            <span className="font-mono text-[10px] text-slate-900 font-black tracking-widest uppercase">Status: {systemStatus.status}</span>
+          </div>
+          <button 
+            onClick={handleCreateFiling}
+            className="px-6 py-2 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:brightness-110 active:scale-95 shadow-md transition-all flex items-center gap-2"
           >
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <h3 className="text-2xl font-bold text-[#0F4C81]">{stat.value}</h3>
-               </div>
-               <div className="p-2 bg-gray-50 rounded-lg">
-                 <stat.icon className="size-5 text-gray-400" />
-               </div>
-            </div>
-            {stat.change && (
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold ${
-                  stat.change.startsWith('+') ? 'text-green-500' : 
-                  stat.change.includes('Verified') ? 'text-green-600' : 'text-[#0F4C81]'
-                }`}>
-                  {stat.change}
-                </span>
-              </div>
-            )}
-          </motion.div>
-        ))}
-        {/* Special AI Review Accuracy Card with Spark icon */}
-        {/* This is handled by the loop above, but I'll make sure indigo is styled correctly */}
-      </div>
+            <CloudLightning className="size-3" />
+            Ingest Data
+          </button>
+        </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Priority Review Queue */}
-        <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-xl shadow-sm flex flex-col">
-          <div className="p-5 border-b border-[#E2E8F0] flex justify-between items-center">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest flex items-center gap-2">
-              <ClipboardCheck className="size-4 text-[#0F4C81]" />
-              Priority Review Queue
+      <div className="grid grid-cols-12 gap-6 mb-8">
+        {/* Main Stats Column */}
+        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+          {/* Main Timeline Visualization */}
+          <div className="glass-card rounded-2xl p-8 relative overflow-hidden bg-white shadow-sm group">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="font-display text-xl font-bold flex items-center gap-3 text-slate-900">
+              <BarChart3 className="text-primary size-6" />
+              Operational Performance Overview
             </h3>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Live WebSocket Connected</span>
-            </div>
+            <span className="font-mono text-xs text-slate-600 font-bold opacity-80">Node Uptime: 99.98%</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/30 text-[9px] font-medium text-gray-400 uppercase tracking-widest border-b border-gray-100 italic font-serif">
-                  <th className="px-6 py-5">Application ID</th>
-                  <th className="px-6 py-5">Entity Name</th>
-                  <th className="px-6 py-5">Report Type</th>
-                  <th className="px-6 py-5 text-right">Severity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {queue.map((item) => (
-                  <tr key={item.id} className="hover:bg-blue-50/30 transition-all duration-200 group cursor-pointer">
-                    <td className="px-6 py-4">
-                      <span className="text-[12px] font-mono tracking-tighter text-[#0F4C81] bg-blue-50/50 px-2 py-1 rounded border border-blue-100/50">
-                         {item.id}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-bold text-gray-700 tracking-tight">{item.entity}</td>
-                    <td className="px-6 py-4 text-xs text-gray-400 font-medium">{item.type}</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border shadow-sm transition-transform group-hover:scale-105 inline-block ${
-                        item.sColor === 'red' ? 'text-red-600 bg-red-100/20 border-red-200' :
-                        item.sColor === 'blue' ? 'text-blue-600 bg-blue-100/20 border-blue-200' :
-                        item.sColor === 'amber' ? 'text-amber-600 bg-amber-100/20 border-amber-200' :
-                        'text-gray-400 bg-gray-100/50 border-gray-200'
-                      }`}>
-                        {item.severity}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          
+          <div className="relative h-48 flex items-end justify-between gap-2 px-2">
+            {[25, 45, 60, 40, 85, 30, 100, 50, 40, 65].map((height, i) => (
+              <motion.div 
+                key={i}
+                initial={{ height: 0 }}
+                animate={{ height: `${height}%` }}
+                transition={{ duration: 1, delay: i * 0.05, ease: "easeOut" }}
+                className={`flex-1 rounded-t-sm border-t transition-all duration-300 ${
+                  i === 6 
+                    ? "bg-primary border-primary shadow-sm" 
+                    : i < 7 
+                      ? "bg-primary/20 border-primary/40 hover:bg-primary/30" 
+                      : "bg-slate-100 border-slate-200 hover:bg-slate-200"
+                }`}
+              />
+            ))}
           </div>
-          <div className="p-4 border-t border-[#E2E8F0] text-center">
-             <button className="text-[10px] font-bold text-[#0F4C81] uppercase tracking-widest hover:underline">
-               View All Active Queues (126 total)
-             </button>
+
+            <div className="grid grid-cols-5 mt-8 pt-6 border-t border-slate-100">
+            {[
+              { label: "Data Intake", val: "100%", color: "text-primary" },
+              { label: "Scrubbing", val: "94%", color: "text-primary" },
+              { label: "Risk Scan", val: "62%", color: "text-secondary" },
+              { label: "Tech Audit", val: "22%", color: "text-amber-600" },
+              { label: "Final Release", val: "8%", color: "text-slate-400" },
+            ].map((p, i) => (
+              <div key={i} className="text-center group/p cursor-default">
+                <span className="block font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-1 group-hover/p:text-slate-900 transition-colors uppercase font-bold">{p.label}</span>
+                <span className={`${p.color} font-bold text-lg`}>{p.val}</span>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Recent Activity Log */}
-        <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm flex flex-col">
-          <div className="p-5 border-b border-[#E2E8F0] flex items-center justify-between">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest flex items-center gap-2">
-              <HistoryIcon className="size-4 text-[#0F4C81]" />
-              Live Audit Stream
-            </h3>
-            <span className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="text-[8px] font-bold text-green-600 uppercase tracking-tighter">Live</span>
-            </span>
-          </div>
-          <div className="flex-1 p-6 space-y-6">
-            <AnimatePresence initial={false}>
-              {liveEvents.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <RefreshCw className="size-6 text-gray-200 animate-spin mb-2" />
-                  <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Waiting for audit node synchronization...</p>
+      {/* Priority Queue Column */}
+      <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+          <div className="glass-card rounded-2xl p-8 flex flex-col hover:border-primary/20 transition-colors bg-white shadow-sm h-full max-h-[500px]">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="text-red-600 size-6" />
+                <h3 className="font-display text-xl font-bold text-slate-900">Priority Queue</h3>
+              </div>
+              <span className="font-mono text-[10px] bg-slate-100 px-2 py-1 rounded border border-slate-200 text-slate-600 font-bold">{filings.length} ACTIVE</span>
+            </div>
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <AnimatePresence initial={false}>
+                {filings.map((filing) => (
+                  <motion.div 
+                    key={filing.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => setSelectedFilingId(filing.id)}
+                    layout
+                    className={`p-4 rounded-r-xl transition-all hover:brightness-95 cursor-pointer group/card border border-transparent border-l-4 ${
+                      selectedFilingId === filing.id ? 'ring-2 ring-primary/20 scale-[0.98]' : ''
+                    } ${
+                      filing.priority === 'CRITICAL' ? 'bg-red-50 border-red-500 border-red-100' :
+                      filing.priority === 'REVIEW' ? 'bg-primary/5 border-primary border-primary/10' :
+                      'bg-slate-50 border-slate-300 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="font-bold text-slate-900 text-sm truncate pr-4">{filing.title}</span>
+                      <span className={`font-mono text-[9px] font-black border px-1.5 rounded bg-white shadow-sm ${
+                        filing.priority === 'CRITICAL' ? 'text-red-600 border-red-200' :
+                        filing.priority === 'REVIEW' ? 'text-primary border-primary/20' :
+                        'text-slate-700 border-slate-300'
+                      }`}>
+                        {filing.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 bg-white/50 h-1 rounded-full overflow-hidden">
+                       <motion.div 
+                         initial={{ width: 0 }}
+                         animate={{ width: `${filing.progress}%` }}
+                         className={`h-full ${filing.priority === 'CRITICAL' ? 'bg-red-500' : 'bg-primary'}`}
+                       />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-2 font-mono uppercase tracking-tighter opacity-80 font-bold">Created: {new Date(filing.createdAt).toLocaleTimeString()}</p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {filings.length === 0 && (
+                <div className="flex flex-col items-center justify-center p-12 text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl">
+                  <Workflow className="size-12 mb-4" />
+                  <p className="font-mono text-[10px] uppercase font-black uppercase">No active filings in queue</p>
                 </div>
               )}
-              {liveEvents.map((act, i) => (
-                <motion.div 
-                  key={act.id} 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="flex gap-4 group"
-                >
-                  <div className="relative">
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center relative z-10 bg-white ${
-                      act.severity === 'CRITICAL' ? 'border-red-200 text-red-500' :
-                      act.severity === 'SUCCESS' ? 'border-green-200 text-green-500' :
-                      act.severity === 'WARNING' ? 'border-amber-200 text-amber-500' :
-                      'border-gray-200 text-[#0F4C81]'
-                    }`}>
-                      {act.severity === 'CRITICAL' ? <AlertTriangle className="size-3.5" /> : 
-                       act.severity === 'SUCCESS' ? <CheckCircle2 className="size-3.5" /> :
-                       act.severity === 'WARNING' ? <AlertCircle className="size-3.5" /> :
-                       <Zap className="size-3.5" />}
+            </div>
+          </div>
+
+          {/* New: Deep Audit Insights Card */}
+          <AnimatePresence mode="wait">
+            {selectedFiling ? (
+              <motion.div 
+                key={selectedFiling.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="glass-card rounded-2xl p-8 border-l-4 border-slate-900 bg-slate-900 text-white shadow-2xl relative overflow-hidden group"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <MonitorCheck className="size-24 rotate-12" />
+                </div>
+                
+                <h4 className="font-mono text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-4 flex items-center gap-2">
+                  <Activity className="size-3" />
+                  Audit Insight Engine
+                </h4>
+                
+                <div className="relative z-10">
+                  <div className="flex justify-between items-end mb-6">
+                    <div>
+                      <h3 className="font-display text-xl font-bold tracking-tight text-white">{selectedFiling.id} // REPORT</h3>
+                      <p className="text-[10px] text-slate-400 font-mono mt-1 uppercase">Ref: {selectedFiling.title}</p>
                     </div>
-                    {i !== liveEvents.length - 1 && (
-                      <div className="absolute top-8 left-4 w-px h-10 bg-gray-100" />
+                    {selectedFiling.aiAnalysis && (
+                      <div className="text-right">
+                        <div className="text-3xl font-display font-black text-primary">{selectedFiling.aiAnalysis.riskScore}</div>
+                        <div className="text-[8px] font-mono uppercase text-slate-400 tracking-widest font-bold">Risk Index</div>
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-baseline mb-0.5">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">System Node</span>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase">
-                        {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </span>
+
+                  {selectedFiling.aiAnalysis ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-2 py-3 border-y border-white/10">
+                        <div className="text-center">
+                          <div className="text-xs font-bold text-white">p={selectedFiling.aiAnalysis.vitals?.p_value}</div>
+                          <div className="text-[7px] text-slate-300 uppercase font-black">Significance</div>
+                        </div>
+                        <div className="text-center border-x border-white/10">
+                          <div className="text-xs font-bold text-white">N={selectedFiling.aiAnalysis.vitals?.sampleSize}</div>
+                          <div className="text-[7px] text-slate-300 uppercase font-black">Sample Power</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs font-bold text-secondary">{selectedFiling.aiAnalysis.vitals?.dosageConsistency}</div>
+                          <div className="text-[7px] text-slate-300 uppercase font-black">Consistency</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
+                        {selectedFiling.aiAnalysis.findings.map((f: any, i: number) => (
+                          <div key={i} className="flex justify-between items-center py-2 px-3 bg-white/10 rounded-lg border border-white/10 group/finding hover:border-primary/40 transition-all">
+                             <div className="flex flex-col">
+                                <span className="text-[9px] font-black tracking-widest text-primary uppercase mb-0.5">{f.type}</span>
+                                <span className="text-[10px] font-bold text-white">{f.label}</span>
+                             </div>
+                             <div className="text-right">
+                               <div className="text-[9px] font-mono text-slate-300 font-bold">{(f.confidence * 100).toFixed(0)}% CONF.</div>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-700 leading-tight font-medium">
-                      {act.message}
-                    </p>
-                    <p className="text-[9px] text-[#0F4C81] mt-1 uppercase font-bold tracking-tight opacity-60">
-                      Audit Chain Verified
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  ) : (
+                    <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+                      <RefreshCw className="size-8 animate-spin mb-4 text-primary" />
+                      <p className="font-mono text-[9px] uppercase tracking-widest font-black">Awaiting Analysis Stream...</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ) : (
+               <div className="glass-card rounded-2xl p-8 border-l-4 border-slate-200 group overflow-hidden bg-white shadow-sm flex flex-col justify-center items-center h-[340px] text-slate-400">
+                  <BrainCircuit className="size-16 mb-6 opacity-10 group-hover:opacity-30 transition-opacity" />
+                  <p className="font-mono text-[10px] uppercase font-bold tracking-[0.2em] text-center max-w-[200px] leading-relaxed">
+                    Select a filing from the queue to initiate deep-node AI auditing.
+                  </p>
+               </div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Live Activity Row */}
+        <div className="col-span-12 glass-card rounded-2xl flex flex-col overflow-hidden bg-white shadow-sm border-slate-200">
+          <div className="px-8 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+            <h3 className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 flex items-center gap-3">
+              <Workflow className="size-4 text-primary" />
+              Live Regulatory Event Stream
+            </h3>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-mono text-[9px] text-emerald-600 uppercase font-black">Live-Sync</span>
+              </div>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="font-mono text-[9px] text-slate-600 font-bold uppercase tracking-widest">Latency: 14ms</span>
+            </div>
           </div>
-          <div className="p-4 border-t border-[#E2E8F0]">
-             <button className="w-full py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-[10px] font-bold text-gray-600 hover:bg-gray-50 transition-colors uppercase tracking-widest">
-               Access Audit Repository
-             </button>
+          <div className="p-2 bg-slate-50/50">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 h-[160px] overflow-hidden">
+                <AnimatePresence initial={false}>
+                  {liveEvents.slice(0, 5).map((event) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between group hover:border-primary/40 transition-all cursor-default"
+                    >
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${
+                            event.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' : 
+                            event.severity === 'WARNING' ? 'bg-orange-100 text-orange-700' : 
+                            'bg-primary/10 text-primary'
+                          }`}>
+                            {event.severity}
+                          </span>
+                          <span className="font-mono text-[7px] text-slate-600 font-bold">{new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors">{event.message}</p>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-50 flex justify-between items-center">
+                         <span className="text-[7px] font-mono text-slate-600 font-bold uppercase">AUDIT_NODE_01</span>
+                         <Zap className="size-2 text-primary opacity-30" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+             </div>
+          </div>
+        </div>
+
+        {/* Secondary Metrics & AI Health */}
+        <div className="col-span-12 lg:col-span-4 glass-card rounded-2xl p-8 border-l-4 border-secondary group overflow-hidden bg-white shadow-sm">
+          <div className="flex justify-between items-start relative z-10">
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500 font-bold">Summarisation Load</span>
+              <div className="text-5xl font-display font-bold mt-3 text-slate-900">14.8 <span className="text-sm font-normal opacity-70">req/s</span></div>
+            </div>
+            <Activity className="text-secondary size-10 opacity-30 group-hover:opacity-100 transition-opacity duration-500" />
+          </div>
+          <div className="flex gap-2 mt-8 h-10 items-end relative z-10">
+            {[40, 30, 60, 100, 50].map((h, i) => (
+              <div key={i} className={`flex-1 ${h === 100 ? 'bg-secondary' : 'bg-secondary/20'} rounded-sm transition-all hover:bg-secondary/40 h-full`} style={{ height: `${h}%` }} />
+            ))}
+          </div>
+          <p className="mt-4 font-mono text-[10px] text-slate-600 font-bold opacity-80 relative z-10">LLM processing at peak synchronization</p>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-secondary/10" />
+        </div>
+
+        <div className="col-span-12 lg:col-span-5 glass-card rounded-2xl p-8 hover:border-primary/10 transition-colors bg-white shadow-sm border-slate-200">
+          <h3 className="font-display text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-3 text-slate-700">
+            <BrainCircuit className="text-primary size-5" />
+            AI Model Health Metrics
+          </h3>
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="flex justify-between mb-2 text-slate-500">
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">k-anonymity</span>
+                  <span className="font-mono text-[9px] font-bold text-primary">k=24.1</span>
+                </div>
+                <div className="bg-slate-100 h-2 rounded-full overflow-hidden flex shadow-inner">
+                  <motion.div initial={{ width: 0 }} animate={{ width: "85%" }} transition={{ duration: 1.5 }} className="bg-primary h-full" />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2 text-slate-500">
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">ROUGE-L</span>
+                  <span className="font-mono text-[9px] font-bold text-secondary">0.78</span>
+                </div>
+                <div className="bg-slate-100 h-2 rounded-full overflow-hidden flex shadow-inner">
+                  <motion.div initial={{ width: 0 }} animate={{ width: "78%" }} transition={{ duration: 1.5 }} className="bg-secondary h-full" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-slate-200 shadow-sm">
+                <Binary className="text-primary size-5 opacity-70" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Inference Latency</div>
+                <div className="text-[10px] text-slate-600 font-mono font-black mt-0.5 opacity-80">240ms / doc-node</div>
+              </div>
+              <div className="text-primary text-[10px] font-mono font-black py-1 px-2 bg-primary/5 rounded border border-primary/10">
+                -12.4%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-12 lg:col-span-3 glass-card rounded-2xl p-8 border-l-4 border-slate-200 group overflow-hidden bg-white shadow-sm">
+          <div className="flex justify-between items-start relative z-10">
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">Evaluators</span>
+              <div className="text-4xl font-display font-bold mt-3 text-slate-900">42</div>
+            </div>
+            <Network className="text-slate-400 size-8 opacity-30 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="flex items-center gap-2 mt-8 relative z-10">
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 overflow-hidden shadow-sm">
+                  <img src={`https://i.pravatar.cc/100?u=${i + 20}`} alt="User" />
+                </div>
+              ))}
+            </div>
+            <span className="text-[9px] text-slate-600 font-mono font-black">+39 observers</span>
+          </div>
+        </div>
+
+        {/* Milestones Row */}
+        <div className="col-span-12 lg:col-span-12">
+          <div className="glass-card rounded-2xl p-8 hover:border-primary/10 transition-colors bg-white shadow-sm border-slate-200">
+            <h3 className="font-display text-xl font-bold mb-8 flex items-center gap-3 text-slate-900">
+              <Calendar className="text-secondary size-6" />
+              Critical Compliance Milestones
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="flex gap-8 items-start group/m border-r border-slate-100 pr-12">
+                <div className="bg-slate-50 p-4 rounded-xl font-mono text-center min-w-[80px] shadow-sm border border-slate-200 group-hover/m:border-primary/30 transition-all cursor-default">
+                  <span className="block text-secondary font-black text-xl mb-1">SEP</span>
+                  <span className="text-slate-600 font-black text-lg">22</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-slate-900 text-base tracking-tight">Data Anonymisation Sign-off</h4>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed opacity-80">Institutional ethics board approval required for automated de-identification.</p>
+                  <div className="flex gap-4 mt-4">
+                    <span className="text-[9px] font-black bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">Approved</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-8 items-start group/m">
+                <div className="bg-slate-50 p-4 rounded-xl font-mono text-center min-w-[80px] shadow-sm border border-slate-200 group-hover/m:border-secondary/30 transition-all cursor-default">
+                  <span className="block text-secondary font-black text-xl mb-1">OCT</span>
+                  <span className="text-slate-600 font-black text-lg">05</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-slate-900 text-base tracking-tight">AI Validation Drift Test</h4>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed opacity-80">Cross-referencing human reviewer consensus with AI recommendation models.</p>
+                  <div className="flex gap-4 mt-4">
+                    <span className="text-[9px] font-black bg-slate-100 text-slate-500 border border-slate-200 px-3 py-1 rounded-full uppercase tracking-widest">Upcoming</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Row: Risk and Scans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-         {/* Risk Factor Analysis */}
-         <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">Risk Factor Analysis</h3>
-            <div className="space-y-6">
-               {[
-                  { label: "Unexpected Clinical Outcome", value: 0.42, color: "#0F4C81" },
-                  { label: "Historical Lab Compliance", value: -0.18, color: "#10B981" },
-                  { label: "Dosage Margin Error", value: 0.25, color: "#0F4C81" }
-               ].map((risk, i) => (
-                  <div key={i}>
-                     <div className="flex justify-between text-xs font-bold mb-2">
-                        <span className="text-gray-600">{risk.label}</span>
-                        <span className={risk.value > 0 ? "text-blue-600" : "text-green-600"}>
-                           {risk.value > 0 ? `+${risk.value}` : risk.value}
-                        </span>
-                     </div>
-                     <div className="h-4 bg-gray-50 rounded-full overflow-hidden flex items-center px-1">
-                        <div 
-                           className="h-2 rounded-full transition-all duration-1000"
-                           style={{ 
-                              width: `${Math.abs(risk.value) * 100}%`,
-                              backgroundColor: risk.color,
-                              marginLeft: risk.value < 0 ? 'auto' : '0',
-                              marginRight: risk.value < 0 ? '0' : 'auto'
-                           }}
-                        />
-                     </div>
-                  </div>
-               ))}
-            </div>
-         </div>
-
-         {/* Automated Compliance Scan */}
-         <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col">
-            <div className="mb-auto">
-               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-6">Automated Compliance Scan</h3>
-               <p className="text-[13px] text-gray-600 leading-relaxed mb-10 font-medium">
-                  Neural engines detected <span className="text-[#0F4C81] font-black underline decoration-[#0F4C81]/30">3 missing metadata tags</span> in verified container index <span className="font-bold text-gray-900">#NDA-441-X001</span>. 
-               </p>
-            </div>
-            <button className="w-full py-4 bg-[#0F4C81] text-white rounded-xl text-[10px] font-bold hover:bg-[#1a5f9b] transition-all uppercase tracking-widest shadow-lg shadow-blue-900/20 ring-1 ring-white/10 active:scale-95">
-               Engage Policy Repair
-            </button>
-         </div>
-
-         {/* Infrastructure Health & Footer Status */}
-         <div className="flex flex-col gap-6">
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex-1">
-               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">Infrastructure Health</h3>
-               <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                     <span className="text-xs font-bold text-gray-600">Delhi Central Server</span>
-                     <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-bold border border-green-100 rounded uppercase">Optimal</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                     <span className="text-xs font-bold text-gray-600">AI Inference Latency</span>
-                     <span className="text-xs font-bold text-[#0F4C81] font-mono">142ms</span>
-                  </div>
-               </div>
-               <div className="mt-8 flex justify-center">
-                  <div className="w-10 h-10 bg-[#0F4C81] rounded-lg flex items-center justify-center shadow-lg text-white">
-                    <CloudLightning className="size-6" />
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-
-      {/* Footer Info */}
-      <footer className="pt-8 border-t border-[#E2E8F0] flex flex-wrap justify-between items-center gap-6">
-         <div className="flex items-center gap-4">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">All Systems Operational • RAHA v2.4.1</p>
-         </div>
-         <div className="flex gap-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-            <button className="hover:text-[#0F4C81]">Privacy Policy</button>
-            <button className="hover:text-[#0F4C81]">User Manual</button>
-            <button className="hover:text-[#0F4C81]">Institutional Ethics Board</button>
-         </div>
+      {/* Footer Details */}
+      <footer className="mt-8 pt-10 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center text-slate-400 gap-8 overflow-hidden">
+        <div className="flex items-center gap-10 flex-wrap justify-center">
+          <div className="flex items-center gap-2 group cursor-default">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse ring-4 ring-green-500/10" />
+            <span className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900 transition-colors">Gateway 01: NOMINAL</span>
+          </div>
+          <div className="flex items-center gap-2 group cursor-default">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse ring-4 ring-green-500/10" />
+            <span className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900 transition-colors">AI Core: OPERATIONAL</span>
+          </div>
+          <div className="flex items-center gap-2 group cursor-default">
+            <div className="w-2 h-2 rounded-full bg-secondary animate-pulse ring-4 ring-secondary/10" />
+            <span className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900 transition-colors">Sync Latency: 12ms</span>
+          </div>
+        </div>
+        <div className="text-[9px] font-mono font-black uppercase tracking-[0.4em] text-slate-400 opacity-80 hover:opacity-100 transition-opacity cursor-default whitespace-nowrap">
+          CDSCO REGULATORY AI WORKFLOW v2.4.01-STABLE
+        </div>
       </footer>
     </div>
   );

@@ -1,89 +1,71 @@
-# CDSCO-IndiaAI: Regulatory Analysis Platform
+# IndiaAI-CDSCO Regulatory Sentinel
 
-An AI-powered intelligence suite designed for regulatory compliance, safety monitoring, and document auditing in the pharmaceutical and clinical research domain.
+## Overview
+The **IndiaAI-CDSCO Regulatory Sentinel** is an AI-powered platform designed for the *Health Innovation Acceleration Hackathon*. It streamlines the regulatory review process for the Central Drugs Standard Control Organisation (CDSCO) by automating document-intensive workflows, ensuring data privacy, and enhancing decision-making efficiency.
 
-## 🚀 Core Features
+The platform is built to comply with the **DPDP Act 2023**, **NDHM Health Data Management Policy**, and **ICMR Ethical Guidelines**.
 
-### 1. PII Anonymization Engine
-- **Strict Compliance:** Automatically detects and masks Personally Identifiable Information (PII) according to global privacy standards.
-- **Dual Mode:** Supports both *Pseudonymisation* (reversible mapping) and *Irreversible Anonymization*.
-- **Entity Detection:** Identifies Names, MRNs, Addresses, Phone numbers, and DOBs in clinical documents.
+## Key Features
 
-### 2. Regulatory Summarizer
-- **Context-Aware:** Tailored for SUGAM forms, Clinical protocols, and Manufacturing logs.
-- **Structured Insights:** Extracts key findings, regulatory gaps, and action items using neural evaluation.
+### 1. AI-Powered Anonymisation
+- **PII/PHI Detection**: Automatically identifies and classifies Personally Identifiable Information and Protected Health Information in structured and unstructured data.
+- **Two-Step Process**: 
+  - *Pseudonymisation*: Replaces identifiers with secure tokens.
+  - *Irreversible Anonymisation*: Generalises and normalises sensitive data for regulatory innovation.
 
-### 3. SAE Classification Board
-- **Fatal/Non-Fatal Classification:** AI-driven triage of Serious Adverse Events (SAE).
-- **Explainable AI (SHAP):** Visualizes which medical terms influenced the severity verdict.
-- **Narrative Audit:** Direct ingestion of clinical narratives for immediate risk scoring.
+### 2. Document Summarisation
+- **Multi-Source Synthesis**: Precisely extracts critical information from:
+  - SUGAM Portal checklists.
+  - SAE (Serious Adverse Event) case narrations.
+  - Meeting transcripts and audio summaries.
+- **Standardised Output**: Converts diverse source materials into a concise, actionable format for reviewers.
 
-### 4. Version Comparison & Delta Analysis
-- **Differential Tracking:** Side-by-side comparison of document versions (e.g., Labeling v1 vs v2).
-- **Magnitude Scoring:** Quantifies the extent of changes in clinical protocols or drug master files.
+### 3. Completeness & Comparison Engine
+- **Administrative Audit**: Verifies consistency and accuracy across mandatory forms and regulatory checklists.
+- **Version Control**: Highlights substantive changes between different versions of applicant filings (e.g., Clinical Trial protocols).
 
-### 5. Completeness & Integrity Audit
-- **SUGAM Verification:** Audits regulatory submissions for missing fields or inconsistent data.
-- **Data Integrity:** Flags back-dating, illegible signatures, and non-contemporaneous entries in lab logs.
+### 4. SAE Severity Classification
+- **Automated Triage**: Classifies adverse events by severity (Death, Disability, Hospitalisation, etc.).
+- **Duplicate Detection**: Identifies redundant case reports to optimize officer prioritisation.
 
-### 6. Neural Inspection Reports
-- **Field Observations:** Converts raw inspection notes and OCR data into structured regulatory reports.
-- **Risk Assessment:** Categorizes observations by severity (Critical, Major, Minor).
+### 5. Inspection Report Generation
+- **Handwritten-to-Formal**: Converts unstructured field observations into formal CDSCO-templated inspection reports.
 
-## 🛠️ Getting Started
+## Tech Stack
+- **Frontend**: React 18, Vite, Tailwind CSS, Framer Motion (for real-time animations).
+- **Backend**: Express + Socket.io (Simulated real-time audit engine).
+- **AI/ML**: LangGraph-inspired orchestration for regulatory consistency (Simulated).
+
+## Installation
 
 ### Prerequisites
-- **Node.js**: Version 18.x or higher
-- **Package Manager**: npm or yarn
-- **API Key**: A Google Gemini API key
+- Node.js (v18 or higher)
+- npm or yarn
 
-### Installation
-
-1. **Clone the repository**
+### Setup
+1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-repo/cdsco-india-ai.git
-   cd cdsco-india-ai
+   git clone https://github.com/CaptDoom/CDSCO.git
+   cd CDSCO
    ```
 
-2. **Install dependencies**
+2. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. **Configure Environment Variables**
-   Create a `.env` file in the root directory and add your Gemini API key:
-   ```env
-   GEMINI_API_KEY=your_actual_api_key_here
-   ```
-
-4. **Launch Development Server**
+3. **Start the development server**:
    ```bash
    npm run dev
    ```
 
-### Deployment
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
 
-Build the optimized production assets:
-```bash
-npm run build
-```
-The static files will be generated in the `dist/` directory.
+## Compliance & Ethics
+This tool strictly adheres to the Responsible AI principles advocated by IndiaAI, ensuring transparency, accountability, and the protection of citizen privacy through state-of-the-art de-identification protocols.
 
-## ⚙️ Technical Stack
-
-- **Frontend:** React 18+ with Vite
-- **Styling:** Tailwind CSS (Modern, high-density regulatory UI)
-- **Intelligence:** Google Gemini Pro / Flash (Neural processing)
-- **Animations:** Motion (Framer Motion)
-- **Icons:** Lucide React
-
-## 📊 Dataset Testing
-The platform comes pre-loaded with open-source datasets for testing:
-- **i2b2/UTHealth:** Clinical PHI samples
-- **MIMIC-III:** Patient narrative cases
-- **CDSCO/SUGAM:** Mock regulatory transcripts
-- **FDA FAERS:** Public safety reports
-- **ICDAR SROIE:** Hand-written inspection logs
-
-## 📄 License
-Internal Regulatory Use Only. Prepared for CDSCO Modernization Initiative.
+---
+*Developed for the CDSCO-IndiaAI Health Innovation Acceleration Hackathon 2026.*
